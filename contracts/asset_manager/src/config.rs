@@ -7,8 +7,11 @@ pub struct ConfigData {
     pub xcall: Address,
     pub xcall_manager: Address,
     pub native_address: Address,
-    pub icon_assset_manager: String,
-    pub xcall_network_address: String
+    pub icon_asset_manager: String,
+}
+
+pub fn set_config(e: &Env, config: ConfigData){
+    e.storage().instance().set(&DataKey::Config, &config);
 }
 
 pub fn get_config(e: &Env) -> ConfigData {

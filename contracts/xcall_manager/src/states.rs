@@ -1,4 +1,4 @@
-use soroban_sdk::{Env, String, Vec};
+use soroban_sdk::{Address, Env, String, Vec};
 
 use crate::storage_types::DataKey;
 
@@ -8,6 +8,14 @@ pub fn has_state(env:Env, key: DataKey) -> bool {
 
 pub fn write_string_state(e: &Env, key: DataKey, id: &String) {
     e.storage().instance().set(&key, id);
+}
+
+pub fn write_address_state(e: &Env, key: DataKey, id: &Address) {
+    e.storage().instance().set(&key, id);
+}
+
+pub fn read_address_state(e: &Env, key: DataKey) -> Address {
+    e.storage().instance().get(&key).unwrap()
 }
 
 pub fn write_vec_string_state(e: &Env, key: DataKey, id: &Vec<String>) {
