@@ -1,0 +1,101 @@
+#![cfg(test)]
+extern crate std;
+
+use crate::contract::BalancedDollarClient;
+
+use soroban_rlp::messages::{cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert};
+use soroban_sdk::{
+    token, Bytes, String, Vec
+};
+use super::setup::*;
+
+#[test]
+fn test_initialize() {
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+
+    ctx.init_context(&client);
+
+    let registry_exists = client.is_initialized();
+    assert_eq!(registry_exists, ctx.admin)
+}
+
+
+#[test]
+fn test_cross_transfer_with_to_and_data(){
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+    ctx.init_context(&client);
+
+    let amount_i128: i128 = 100000 ;
+    let amount = &(amount_i128 as u128);
+    let mint_amount = &(amount_i128+amount_i128);
+    
+    client.mint(&ctx.depositor, mint_amount);
+
+    ctx.mint_native_token(&ctx.depositor, 500);
+    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 500);
+
+    client.approve(&ctx.depositor, &ctx.registry, &(amount_i128+amount_i128), &1312000);
+    let data: [u8; 32] = [
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+        0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+        0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
+    ];
+    client.cross_transfer_data(&ctx.depositor, &amount, &String::from_str(&ctx.env, "icon01/hxjkdvhui"), &Bytes::from_array(&ctx.env, &data));
+    std::println!("call");
+    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 400) // why 300?
+}
+
+
+#[test]
+fn test_handle_call_message_for_cross_transfer(){
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    
+    let bnusd_amount = 100000 as u128;
+
+    let items: [u8; 32] = [
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+        0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+        0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
+    ];
+    let data = CrossTransfer::new(ctx.depositor.to_string(), ctx.withdrawer.to_string(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
+    let decoded = CrossTransfer::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, ctx.withdrawer.to_string());
+
+    assert_eq!(client.balance(&ctx.withdrawer), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
+    
+    assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+}
+
+#[test]
+fn test_handle_call_message_for_cross_transfer_revert(){
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    
+    let bnusd_amount = 100000 as u128;
+
+    let data = CrossTransferRevert::new( ctx.withdrawer.clone(), bnusd_amount).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransferRevert"));
+    let decoded = CrossTransferRevert::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, ctx.withdrawer);
+
+    assert_eq!(client.balance(&ctx.withdrawer), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    client.handle_call_message( &ctx.xcall.to_string(), &data, &sources);
+    
+    assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+}
+

@@ -1,6 +1,6 @@
 use soroban_sdk::{contracttype, Env, String, Address, Bytes, Vec};
-use soroban_rlp::{encoder, decoder};
-use crate::errors::ContractError;
+use crate::encoder;
+use crate::decoder;
 
 #[derive(Clone)]
 #[contracttype]
@@ -36,18 +36,18 @@ impl CrossTransferRevert{
         encoded
     }
 
-    pub fn decode(e: &Env, bytes: Bytes) -> Result<CrossTransferRevert, ContractError> {
+    pub fn decode(e: &Env, bytes: Bytes) -> CrossTransferRevert{
         let decoded = decoder::decode_list(&e, bytes);
-        if decoded.len() != 6 {
-            return Err(ContractError::InvalidRlpLength);
+        if decoded.len() != 3 {
+            panic!("InvalidRlpLength");
         }
 
         let to = Address::from_string(&decoder::decode_string(e, decoded.get(1).unwrap()));
         let amount = decoder::decode_u128(e, decoded.get(2).unwrap());
 
-        Ok(Self {
+        Self {
             to,
             amount
-        })
+        }
     }
 }

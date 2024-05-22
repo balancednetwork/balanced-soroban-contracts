@@ -1,6 +1,8 @@
 use soroban_sdk::{contracttype, Env, String, Bytes, Vec};
-use soroban_rlp::{encoder, decoder};
-use crate::errors::ContractError;
+use crate::encoder;
+use crate::decoder;
+
+extern crate std;
 
 #[derive(Clone)]
 #[contracttype]
@@ -36,27 +38,27 @@ impl ConfigureProtocols{
         encoded
     }
 
-    pub fn decode(e: &Env, bytes: Bytes) -> Result<ConfigureProtocols, ContractError> {
+    pub fn decode(e: &Env, bytes: Bytes) -> ConfigureProtocols {
+        std::println!("encoded bytes: {:?}", bytes);
         let decoded = decoder::decode_list(&e, bytes);
-        if decoded.len() != 6 {
-            return Err(ContractError::InvalidRlpLength);
+        std::println!("decoded bytes: {:?}", decoded);
+        if decoded.len() != 3 {
+            panic!("InvalidRlpLength");
         }
-
+        
         let sources = decoder::decode_strings(e, decoded.get(1).unwrap());
         let destinations = decoder::decode_strings(e, decoded.get(2).unwrap());
-
-        Ok(Self {
+        // std::println!("vec sources: {:?}", sources);
+        // std::println!("vec destinations: {:?}", destinations);
+        Self {
             sources,
             destinations
-        })
+        }
     }
 
-    pub fn get_method(e: &Env, bytes: Bytes) -> Result<String, ContractError> {
+    pub fn get_method(e: &Env, bytes: Bytes) -> String {
         let decoded = decoder::decode_list(&e, bytes);
-        if decoded.len() != 6 {
-            return Err(ContractError::InvalidRlpLength);
-        }
         let method = decoder::decode_string(e, decoded.get(0).unwrap());
-        Ok(method)
+        method
     }
 }

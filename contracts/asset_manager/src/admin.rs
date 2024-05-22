@@ -1,5 +1,5 @@
 use soroban_sdk::{Address, Env};
-
+extern crate std;
 use crate::storage_types::DataKey;
 
 pub fn has_administrator(e: &Env) -> bool {

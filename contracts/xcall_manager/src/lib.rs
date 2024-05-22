@@ -4,9 +4,6 @@ mod admin;
 pub mod contract;
 mod storage_types;
 mod states;
-mod test;
+mod tests;
 mod errors;
 mod config;
-mod messages;
-
-pub use crate::contract::XcallManagerClient;

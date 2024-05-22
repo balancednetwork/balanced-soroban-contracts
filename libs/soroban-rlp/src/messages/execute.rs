@@ -1,6 +1,6 @@
 use soroban_sdk::{contracttype, Env, String, Bytes, Vec, Address};
-use soroban_rlp::{encoder, decoder};
-use crate::errors::ContractError;
+use crate::encoder;
+use crate::decoder;
 
 #[derive(Clone)]
 #[contracttype]
@@ -35,18 +35,18 @@ impl Execute{
         encoded
     }
 
-    pub fn decode(e: &Env, bytes: Bytes) -> Result<Execute, ContractError> {
+    pub fn decode(e: &Env, bytes: Bytes) -> Execute {
         let decoded = decoder::decode_list(&e, bytes);
-        if decoded.len() != 6 {
-            return Err(ContractError::InvalidRlpLength);
+        if decoded.len() != 3 {
+            panic!("InvalidRlpLength");
         }
 
         let contract_address = Address::from_string(&decoder::decode_string(e, decoded.get(1).unwrap()));
         let data = decoded.get(2).unwrap();
 
-        Ok(Self {
+        Self {
             contract_address,
             data
-        })
+        }
     }
 }

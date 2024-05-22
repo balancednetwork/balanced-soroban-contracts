@@ -1,6 +1,6 @@
 use soroban_sdk::{contracttype, Env, String, Bytes, Vec};
-use soroban_rlp::{encoder, decoder};
-use crate::errors::ContractError;
+use crate::encoder;
+use crate::decoder;
 
 #[derive(Clone)]
 #[contracttype]
@@ -42,20 +42,20 @@ impl WithdrawTo{
         encoded
     }
 
-    pub fn decode(e: &Env, bytes: Bytes) -> Result<WithdrawTo, ContractError> {
+    pub fn decode(e: &Env, bytes: Bytes) -> WithdrawTo {
         let decoded = decoder::decode_list(&e, bytes);
-        if decoded.len() != 6 {
-            //return Err(ContractError::InvalidRlpLength);
+        if decoded.len() != 4 {
+            panic!("InvalidRlpLength");
         }
 
         let token_address = decoder::decode_string(e, decoded.get(1).unwrap());
         let to = decoder::decode_string(e, decoded.get(2).unwrap());
         let amount = decoder::decode_u128(e, decoded.get(3).unwrap());
 
-        Ok(Self {
+        Self {
             token_address,
             to,
             amount
-        })
+        }
     }
 }
