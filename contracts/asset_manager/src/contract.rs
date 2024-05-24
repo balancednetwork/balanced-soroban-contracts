@@ -154,25 +154,6 @@ impl AssetManager {
        Ok(Self::send_deposit_message(e, from, token, amount, deposit_to, deposit_data)?)
     }
 
-    pub fn deposit_native(
-        e: Env,
-        from: Address,
-        value: u128,
-        amount: u128,
-        to: Option<String>,
-        data: Option<Bytes>
-    ) -> Result<(), ContractError>  {
-        if value < amount { 
-            panic_with_error!(&e, ContractError::AmountIsLessThanMinimumAmount);
-        }
-
-        let deposit_to = to.unwrap_or(String::from_str(&e, ""));
-        let deposit_data = data.unwrap_or(Bytes::from_array(&e, &[0u8; 32]));
-
-        let native_address = get_config(&e).native_address;
-        Ok(Self::send_deposit_message(e, from, native_address, amount, deposit_to, deposit_data)?)
-    }
-
     fn send_deposit_message(
         e: Env,
         from: Address,
@@ -261,10 +242,8 @@ impl AssetManager {
         if amount <= 0 {
             panic_with_error!(&e, ContractError::AmountIsLessThanMinimumAmount);
         }
-        std::println!("before verify");
         let verified = Self::verify_withdraw(e.clone(), token.clone(), amount)?;
         if verified {
-            std::println!("before transfer");
             Self::transfer_token_to(e, from, token, to, amount);
         }
         Ok(())
@@ -279,7 +258,6 @@ impl AssetManager {
         let token_client = token::Client::new(&e, &token);
         return token_client.balance(&e.current_contract_address());
     }
-
 
     pub fn has_registry(e: Env) -> bool {
         has_state(e, DataKey::Registry)

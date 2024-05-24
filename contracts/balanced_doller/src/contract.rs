@@ -7,10 +7,12 @@ use crate::config::ConfigData;
 use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
 use crate::storage_types::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use soroban_sdk::token::{self, Interface as _};
-use soroban_sdk::{contract, contractimpl, Address, Env, String, Bytes, Vec};
+use soroban_sdk::{contract, contractimpl, panic_with_error, Address, Bytes, Env, String, Vec};
 use soroban_token_sdk::metadata::TokenMetadata;
 use soroban_token_sdk::TokenUtils;
-fn check_nonnegative_amount(amount: i128) {
+use crate::balanced_dollar;
+use crate::errors::ContractError;
+pub fn check_nonnegative_amount(amount: i128) {
     if amount < 0 {
         panic!("negative amount is not allowed: {}", amount)
     }
@@ -23,7 +25,7 @@ pub struct BalancedDollar;
 impl BalancedDollar {
     pub fn initialize(e: Env, admin: Address, config: ConfigData) {
         if has_administrator(&e) {
-            panic!("already initialized")
+            panic_with_error!(e, ContractError::ContractAlreadyInitialized)
         }
         write_administrator(&e, &admin);
         
@@ -33,7 +35,7 @@ impl BalancedDollar {
         let symbol = String::from_str(&e, "bnUSD");
 
         if decimal > u8::MAX.into() {
-            panic!("Decimal must fit in a u8");
+            panic_with_error!(e, ContractError::DecimalMustFitInAu8)
         }
 
         write_metadata(
@@ -44,20 +46,14 @@ impl BalancedDollar {
                 symbol,
             },
         );
-        Self::configure(e, config );
+        balanced_dollar::configure(e, config );
     }
 
     pub fn mint(e: Env, to: Address, amount: i128) {
-        check_nonnegative_amount(amount);
         let admin = read_administrator(&e);
-        //admin.require_auth();
-
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
-        receive_balance(&e, to.clone(), amount);
-        TokenUtils::new(&e).events().mint(admin, to, amount);
+        admin.require_auth();
+        
+        balanced_dollar::_mint(e, to, amount)
     }
 
     pub fn set_admin(e: Env, new_admin: Address) {
@@ -72,6 +68,10 @@ impl BalancedDollar {
         TokenUtils::new(&e).events().set_admin(admin, new_admin);
     }
 
+    pub fn get_admin(e: Env) -> Address {
+        read_administrator(&e)
+    }
+
     pub fn cross_transfer(
         e: Env,
         from: Address,
@@ -79,7 +79,7 @@ impl BalancedDollar {
         to: String,
     ) {
         from.require_auth();
-        Self::_cross_transfer(e.clone(), from, amount, to, Bytes::new(&e)).unwrap();
+        balanced_dollar::_cross_transfer(e.clone(), from, amount, to, Bytes::new(&e)).unwrap();
     }
 
     pub fn cross_transfer_data(
@@ -90,7 +90,7 @@ impl BalancedDollar {
         data: Bytes
     ) {
         from.require_auth();
-        Self::_cross_transfer(e, from, amount, to, data).unwrap();
+        balanced_dollar::_cross_transfer(e, from, amount, to, data).unwrap();
     }
 
     pub fn handle_call_message(
@@ -99,7 +99,7 @@ impl BalancedDollar {
         data: Bytes,
         protocols: Vec<String>
     ) {
-       Self::_handle_call_message(e, from, data, protocols);
+       balanced_dollar::_handle_call_message(e, from, data, protocols);
     }
 
     pub fn is_initialized(e: Env) -> Address {
@@ -168,16 +168,7 @@ impl token::Interface for BalancedDollar {
     }
 
     fn burn(e: Env, from: Address, amount: i128) {
-        from.require_auth();
-
-        check_nonnegative_amount(amount);
-
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
-        spend_balance(&e, from.clone(), amount);
-        TokenUtils::new(&e).events().burn(from, amount);
+        balanced_dollar::_burn(e, from, amount);
     }
 
     fn burn_from(e: Env, spender: Address, from: Address, amount: i128) {

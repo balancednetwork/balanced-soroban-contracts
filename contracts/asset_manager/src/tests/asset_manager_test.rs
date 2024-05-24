@@ -3,8 +3,7 @@ extern crate std;
 
 
 use soroban_sdk::{
-    testutils::Address as _,
-    token, Address, Bytes, String, Vec
+    symbol_short, testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation}, token, Address, Bytes, IntoVal, String, Vec
 };
 use crate::contract::AssetManagerClient;
 
@@ -31,8 +30,39 @@ fn test_set_admin() {
     
     let new_admin: Address = Address::generate(&ctx.env);
     client.set_admin(&new_admin);
+    assert_eq!(
+        ctx.env.auths(),
+        std::vec![
+            (
+                ctx.admin.clone(),
+                AuthorizedInvocation {
+                    function: AuthorizedFunction::Contract((
+                        ctx.registry.clone(),
+                        symbol_short!("set_admin"),
+                        (&new_admin,)
+                        .into_val(&ctx.env)
+                    )),
+                    sub_invocations: std::vec![]
+                }
+            )
+        ]
+    );
+    assert_eq!(client.get_admin(), new_admin);
+}
 
-    assert_eq!(client.get_admin(), new_admin)
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #4)")]
+fn test_configure_rate_limit_panic() {
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.init_context(&client);
+    let period = &300;
+    let percentage = &1001;
+    client.configure_rate_limit( &ctx.token, period, percentage );
+
+    let limit = client.get_withdraw_limit(&ctx.token);
+    let verified = client.verify_withdraw(&ctx.token, &limit);
+    assert_eq!(verified, true);
 }
 
 #[test]
@@ -40,9 +70,10 @@ fn test_configure_rate_limit() {
     let ctx = TestContext::default();
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
     ctx.init_context(&client);
+    let period = &300;
+    let percentage = &300;
+    client.configure_rate_limit( &ctx.token, period, percentage );
 
-    client.configure_rate_limit( &ctx.token, &300, &300 );
-    
     let limit = client.get_withdraw_limit(&ctx.token);
     let verified = client.verify_withdraw(&ctx.token, &limit);
     assert_eq!(verified, true);
@@ -69,7 +100,68 @@ fn test_deposit_without_to_and_data(){
     token_client.approve(&ctx.depositor, &ctx.registry, &(amount_i128+amount_i128), &1312000);
     client.deposit(&ctx.depositor,  &ctx.token, &amount, &Option::Some(String::from_str(&ctx.env, "")), &Option::Some(Bytes::from_array(&ctx.env, &[0u8; 32])));
 
-    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 400) // why 300?
+    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 400); // why 300?
+}
+
+#[test]
+fn test_veryfy_rate_limit() {
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.init_context(&client);
+    let period = &300;
+    let percentage = &300;
+    client.configure_rate_limit( &ctx.token, period, percentage );
+
+    client.configure_rate_limit( &ctx.token, &300, &300 );
+    let token_client = token::Client::new(&ctx.env, &ctx.token);
+    let stellar_asset_client: token::StellarAssetClient = token::StellarAssetClient::new(&ctx.env, &ctx.token);
+    let amount_i128: i128 = 100000 ;
+    let amount = &(amount_i128 as u128);
+    let mint_amount = &(amount_i128+amount_i128);
+    
+    stellar_asset_client.mint(&ctx.depositor, mint_amount);
+
+    ctx.mint_native_token(&ctx.depositor, 500);
+    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 500);
+
+    token_client.approve(&ctx.depositor, &ctx.registry, &(amount_i128+amount_i128), &1312000);
+    client.deposit(&ctx.depositor,  &ctx.token, &amount, &Option::Some(String::from_str(&ctx.env, "")), &Option::Some(Bytes::from_array(&ctx.env, &[0u8; 32])));
+    
+    let limit = client.get_withdraw_limit(&ctx.token);
+    assert_eq!(limit, 30000);
+    let verified = client.verify_withdraw(&ctx.token, &(amount-30000-1));
+    assert_eq!(verified, true);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #5)")]
+fn test_veryfy_rate_limit_panic_exceeds_withdraw_limit() {
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.init_context(&client);
+    let period = &300;
+    let percentage = &300;
+    client.configure_rate_limit( &ctx.token, period, percentage );
+
+    client.configure_rate_limit( &ctx.token, &300, &300 );
+    let token_client = token::Client::new(&ctx.env, &ctx.token);
+    let stellar_asset_client: token::StellarAssetClient = token::StellarAssetClient::new(&ctx.env, &ctx.token);
+    let amount_i128: i128 = 100000 ;
+    let amount = &(amount_i128 as u128);
+    let mint_amount = &(amount_i128+amount_i128);
+    
+    stellar_asset_client.mint(&ctx.depositor, mint_amount);
+
+    ctx.mint_native_token(&ctx.depositor, 500);
+    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 500);
+
+    token_client.approve(&ctx.depositor, &ctx.registry, &(amount_i128+amount_i128), &1312000);
+    client.deposit(&ctx.depositor,  &ctx.token, &amount, &Option::Some(String::from_str(&ctx.env, "")), &Option::Some(Bytes::from_array(&ctx.env, &[0u8; 32])));
+    
+    let limit = client.get_withdraw_limit(&ctx.token);
+    assert_eq!(limit, 30000);
+    let verified = client.verify_withdraw(&ctx.token, &(amount-30000+1));
+    assert_eq!(verified, true);
 }
 
 #[test]
@@ -123,8 +215,8 @@ fn test_deposit_with_to_and_data(){
         0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
     ];
     client.deposit(&ctx.depositor,  &ctx.token, &amount, &Option::Some(String::from_str(&ctx.env, "icon01/hxjkdvhui")), &Option::Some(Bytes::from_array(&ctx.env, &data)));
+    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 400); // why 300?
 
-    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 400) // why 300?
 }
 
 
@@ -143,6 +235,87 @@ fn test_handle_call_message_for_withdraw_to(){
     stellar_asset_client.mint(&ctx.registry, &((bnusd_amount*2) as i128));
 
     let data = WithdrawTo::new(ctx.token.to_string(), ctx.withdrawer.to_string(), bnusd_amount).encode(&ctx.env, String::from_str(&ctx.env, "WithdrawTo"));
+    let decoded = WithdrawTo::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, ctx.withdrawer.to_string());
+
+    assert_eq!(token_client.balance(&ctx.withdrawer), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    client.handle_call_message(&ctx.xcall, &ctx.icon_asset_manager, &data, &sources);
+    
+    assert_eq!(token_client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #7)")]
+fn test_handle_call_message_for_withdraw_to_panic_with_protocal_mismatch(){
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    client.configure_rate_limit( &ctx.token, &300, &300 );
+    
+    let bnusd_amount = 100000 as u128;
+    let token_client = token::Client::new(&ctx.env, &ctx.token);
+    let stellar_asset_client: token::StellarAssetClient = token::StellarAssetClient::new(&ctx.env, &ctx.token);
+    stellar_asset_client.mint(&ctx.registry, &((bnusd_amount*2) as i128));
+
+    let data = WithdrawTo::new(ctx.token.to_string(), ctx.withdrawer.to_string(), bnusd_amount).encode(&ctx.env, String::from_str(&ctx.env, "WithdrawTo"));
+    let decoded = WithdrawTo::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, ctx.withdrawer.to_string());
+
+    assert_eq!(token_client.balance(&ctx.withdrawer), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.xcall.to_string()]);
+    client.handle_call_message(&ctx.xcall, &ctx.icon_asset_manager, &data, &sources);
+    
+    assert_eq!(token_client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #8)")]
+fn test_handle_call_message_for_withdraw_to_panic_with_not_icon_asset_manager(){
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    client.configure_rate_limit( &ctx.token, &300, &300 );
+    
+    let bnusd_amount = 100000 as u128;
+    let token_client = token::Client::new(&ctx.env, &ctx.token);
+    let stellar_asset_client: token::StellarAssetClient = token::StellarAssetClient::new(&ctx.env, &ctx.token);
+    stellar_asset_client.mint(&ctx.registry, &((bnusd_amount*2) as i128));
+
+    let data = WithdrawTo::new(ctx.token.to_string(), ctx.withdrawer.to_string(), bnusd_amount).encode(&ctx.env, String::from_str(&ctx.env, "WithdrawTo"));
+    let decoded = WithdrawTo::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, ctx.withdrawer.to_string());
+
+    assert_eq!(token_client.balance(&ctx.withdrawer), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    client.handle_call_message(&ctx.xcall, &ctx.centralized_connection.to_string(), &data, &sources);
+    
+    assert_eq!(token_client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #10)")]
+fn test_handle_call_message_for_withdraw_to_panic_with_unknown_message_type(){
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    client.configure_rate_limit( &ctx.token, &300, &300 );
+    
+    let bnusd_amount = 100000 as u128;
+    let token_client = token::Client::new(&ctx.env, &ctx.token);
+    let stellar_asset_client: token::StellarAssetClient = token::StellarAssetClient::new(&ctx.env, &ctx.token);
+    stellar_asset_client.mint(&ctx.registry, &((bnusd_amount*2) as i128));
+
+    let data = WithdrawTo::new(ctx.token.to_string(), ctx.withdrawer.to_string(), bnusd_amount).encode(&ctx.env, String::from_str(&ctx.env, "WithdrawToUnknown"));
     let decoded = WithdrawTo::decode(&ctx.env, data.clone());
     assert_eq!(decoded.to, ctx.withdrawer.to_string());
 
@@ -176,6 +349,33 @@ fn test_handle_call_message_for_deposit_rollback(){
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
     client.handle_call_message(&ctx.xcall, &ctx.xcall_client.get_network_address(), &data, &sources);
+    
+    assert_eq!(token_client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #9)")]
+fn test_handle_call_message_for_deposit_rollback_panic_with_only_call_service(){
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    client.configure_rate_limit( &ctx.token, &300, &300 );
+    
+    let bnusd_amount = 100000 as u128;
+    let token_client = token::Client::new(&ctx.env, &ctx.token);
+    let stellar_asset_client: token::StellarAssetClient = token::StellarAssetClient::new(&ctx.env, &ctx.token);
+    stellar_asset_client.mint(&ctx.registry, &((bnusd_amount*2) as i128));
+
+    let data = DepositRevert::new(ctx.token, ctx.withdrawer.clone(), bnusd_amount).encode(&ctx.env, String::from_str(&ctx.env, "DepositRevert"));
+    let decoded = DepositRevert::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, ctx.withdrawer);
+
+    assert_eq!(token_client.balance(&ctx.withdrawer), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    client.handle_call_message(&ctx.xcall, &ctx.xcall_manager.to_string(), &data, &sources);
     
     assert_eq!(token_client.balance(&ctx.withdrawer), bnusd_amount as i128) 
 }

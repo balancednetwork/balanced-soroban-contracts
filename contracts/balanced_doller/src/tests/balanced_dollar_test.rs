@@ -5,7 +5,7 @@ use crate::contract::BalancedDollarClient;
 
 use soroban_rlp::messages::{cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert};
 use soroban_sdk::{
-    token, Bytes, String, Vec
+    symbol_short, testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation}, vec, xdr::FromXdr, Address, Bytes, IntoVal, String, Symbol, Val, Vec
 };
 use super::setup::*;
 
@@ -18,8 +18,36 @@ fn test_initialize() {
 
     let registry_exists = client.is_initialized();
     assert_eq!(registry_exists, ctx.admin)
+    
 }
 
+#[test]
+fn test_set_admin() {
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+    ctx.init_context(&client);
+    
+    let new_admin: Address = Address::generate(&ctx.env);
+    client.set_admin(&new_admin);
+    assert_eq!(
+        ctx.env.auths(),
+        std::vec![
+            (
+                ctx.admin.clone(),
+                AuthorizedInvocation {
+                    function: AuthorizedFunction::Contract((
+                        ctx.registry.clone(),
+                        symbol_short!("set_admin"),
+                        (&new_admin,)
+                        .into_val(&ctx.env)
+                    )),
+                    sub_invocations: std::vec![]
+                }
+            )
+        ]
+    );
+    assert_eq!(client.get_admin(), new_admin);
+}
 
 #[test]
 fn test_cross_transfer_with_to_and_data(){
@@ -73,6 +101,94 @@ fn test_handle_call_message_for_cross_transfer(){
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
     client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
+    assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+    
+    
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #4)")]
+fn test_handle_call_message_for_cross_transfer_panic_for_protocol_mismatch(){
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    
+    let bnusd_amount = 100000 as u128;
+
+    let items: [u8; 32] = [
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+        0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+        0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
+    ];
+    let data = CrossTransfer::new(ctx.depositor.to_string(), ctx.withdrawer.to_string(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
+    let decoded = CrossTransfer::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, ctx.withdrawer.to_string());
+
+    assert_eq!(client.balance(&ctx.withdrawer), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.xcall.to_string()]);
+    client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
+    
+    assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #5)")]
+fn test_handle_call_message_for_cross_transfer_panic_for_icon_bnusd(){
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    
+    let bnusd_amount = 100000 as u128;
+
+    let items: [u8; 32] = [
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+        0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+        0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
+    ];
+    let data = CrossTransfer::new(ctx.depositor.to_string(), ctx.withdrawer.to_string(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
+    let decoded = CrossTransfer::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, ctx.withdrawer.to_string());
+
+    assert_eq!(client.balance(&ctx.withdrawer), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    client.handle_call_message( &ctx.icon_governance, &data, &sources);
+    
+    assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #7)")]
+fn test_handle_call_message_for_cross_transfer_panic_for_wront_message_type(){
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    
+    let bnusd_amount = 100000 as u128;
+
+    let items: [u8; 32] = [
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+        0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+        0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
+    ];
+    let data = CrossTransfer::new(ctx.depositor.to_string(), ctx.withdrawer.to_string(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransferPanic"));
+    let decoded = CrossTransfer::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, ctx.withdrawer.to_string());
+
+    assert_eq!(client.balance(&ctx.withdrawer), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
     
     assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
 }
@@ -95,6 +211,29 @@ fn test_handle_call_message_for_cross_transfer_revert(){
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
     client.handle_call_message( &ctx.xcall.to_string(), &data, &sources);
+    
+    assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #6)")]
+fn test_handle_call_message_for_cross_transfer_revert_panic_for_xcall(){
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    
+    let bnusd_amount = 100000 as u128;
+
+    let data = CrossTransferRevert::new( ctx.withdrawer.clone(), bnusd_amount).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransferRevert"));
+    let decoded = CrossTransferRevert::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, ctx.withdrawer);
+
+    assert_eq!(client.balance(&ctx.withdrawer), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    client.handle_call_message( &ctx.centralized_connection.to_string(), &data, &sources);
     
     assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
 }
