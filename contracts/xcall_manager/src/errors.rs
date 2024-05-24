@@ -4,5 +4,13 @@ use soroban_sdk::contracterror;
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ContractError {
-    InvalidRlpLength = 1
+    InvalidRlpLength = 1,
+    ContractAlreadyInitialized = 3,
+    AmountIsLessThanMinimumAmount = 6,
+    ProtocolMismatch = 7,
+    OnlyICONGovernance = 8,
+    OnlyCallService = 9,
+    UnknownMessageType = 10,
+    AdminRequired = 11,
+    NoProposalForRemovalExists = 12
 }

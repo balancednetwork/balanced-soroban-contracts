@@ -23,7 +23,7 @@ impl XcallManager {
     
     pub fn initialize(env:Env, registry:Address, admin: Address, config: ConfigData, sources: Vec<String>, destinations: Vec<String>) {
         if has_state(env.clone(), DataKey::Registry) {
-            panic!("Contract already initialized.")
+            panic_with_error!(env, ContractError::ContractAlreadyInitialized)
         }
         write_address_state(&env, DataKey::Registry, &registry);
         write_address_state(&env, DataKey::Admin, &admin);
@@ -61,15 +61,19 @@ impl XcallManager {
     pub fn propose_removal(e: Env, protocol: String) {
         let admin = read_administrator(&e);
         admin.require_auth();
-
+        
         write_string_state(&e, DataKey::ProposedProtocolToRemove, &protocol);     
+    }
+
+    pub fn get_proposed_removal(e: Env) -> String {
+        read_string_state(&e, DataKey::ProposedProtocolToRemove)
     }
 
     pub fn verify_protocols(
         e: Env,
         protocols: Vec<String>
     )  -> Result<bool, ContractError> {
-        let sources = read_vec_string_state(&e, DataKey::Sources);
+        let sources: Vec<String> = read_vec_string_state(&e, DataKey::Sources);
         return Self::verify_protocols_unordered(e, protocols, sources);
     }
 
@@ -113,12 +117,12 @@ impl XcallManager {
 
         let icon_governance = get_config(&e.clone()).icon_governance;
         if from != icon_governance {
-            panic!("Only ICON Balanced governance is allowed")
+            panic_with_error!(e, ContractError::OnlyICONGovernance)
         }
 
         
         if !Self::verify_protocols(e.clone(), protocols.clone()).unwrap() {
-            panic!("Protocol Mismatch");
+            panic_with_error!(e, ContractError::ProtocolMismatch)
         };
 
         let method = ConfigureProtocols::get_method(&e.clone(), data.clone());
@@ -126,7 +130,7 @@ impl XcallManager {
         let sources = read_vec_string_state(&e, DataKey::Sources);
         if !Self::verify_protocols_unordered(e.clone(), protocols.clone(), sources).unwrap() {
                 if method != String::from_str(&e.clone(), CONFIGURE_PROTOCOLS_NAME)  {
-                    panic!("Protocol Mismatch");
+                    panic_with_error!(e, ContractError::ProtocolMismatch)
                 }
             Self::verify_protocol_recovery(e.clone(), protocols);
         }
@@ -143,7 +147,7 @@ impl XcallManager {
             write_vec_string_state(&e, DataKey::Sources, &sources);
             write_vec_string_state(&e, DataKey::Destinations, &destinations);
         } else {
-            panic!("Unknown message type");
+            panic_with_error!(e, ContractError::UnknownMessageType)
         }
     }
 
@@ -151,13 +155,13 @@ impl XcallManager {
         let modified_sources = Self::get_modified_protocols(e.clone());
         let verify_unordered = Self::verify_protocols_unordered(e.clone(), modified_sources, protocols).unwrap();
         if !verify_unordered {
-           panic!("Protocol Mismatch")
+            panic_with_error!(e, ContractError::ProtocolMismatch)
         }
     }
 
     pub fn get_modified_protocols(e: Env) -> Vec<String>{
         if !has_state(e.clone(), DataKey::ProposedProtocolToRemove) {
-            panic!( "No proposal for removal exists")
+            panic_with_error!(e, ContractError::NoProposalForRemovalExists)
         }
 
         let sources = read_vec_string_state(&e, DataKey::Sources);

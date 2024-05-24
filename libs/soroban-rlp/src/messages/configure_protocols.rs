@@ -2,8 +2,6 @@ use soroban_sdk::{contracttype, Env, String, Bytes, Vec};
 use crate::encoder;
 use crate::decoder;
 
-extern crate std;
-
 #[derive(Clone)]
 #[contracttype]
 pub struct ConfigureProtocols {
@@ -39,17 +37,13 @@ impl ConfigureProtocols{
     }
 
     pub fn decode(e: &Env, bytes: Bytes) -> ConfigureProtocols {
-        std::println!("encoded bytes: {:?}", bytes);
         let decoded = decoder::decode_list(&e, bytes);
-        std::println!("decoded bytes: {:?}", decoded);
         if decoded.len() != 3 {
             panic!("InvalidRlpLength");
         }
         
         let sources = decoder::decode_strings(e, decoded.get(1).unwrap());
         let destinations = decoder::decode_strings(e, decoded.get(2).unwrap());
-        // std::println!("vec sources: {:?}", sources);
-        // std::println!("vec destinations: {:?}", destinations);
         Self {
             sources,
             destinations

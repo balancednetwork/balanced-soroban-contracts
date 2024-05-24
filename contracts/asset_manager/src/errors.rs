@@ -13,6 +13,7 @@ pub enum ContractError {
     ProtocolMismatch = 7,
     OnlyICONAssetManager = 8,
     OnlyCallService = 9,
-    UnknownMessageType = 10
+    UnknownMessageType = 10,
+    AdminRequired = 11
 
 }
