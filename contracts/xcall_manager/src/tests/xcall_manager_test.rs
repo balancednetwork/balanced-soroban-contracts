@@ -237,3 +237,13 @@ fn test_handle_call_message_for_configure_protocols_panic_for_unknown_mesage_typ
     assert_eq!(s, sources);
     assert_eq!(d, destinations);
 }
+
+#[test]
+fn test_extend_ttl(){
+    let ctx = TestContext::default();
+    let client = XcallManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+    ctx.init_context(&client);
+
+    client.extend_ttl();
+}
