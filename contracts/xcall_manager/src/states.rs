@@ -25,11 +25,6 @@ pub fn write_registry(e: &Env, id: &Address) {
     e.storage().instance().set(&key, id);
 }
 
-pub fn read_registry(e: &Env) -> Address {
-    let key = DataKey::Registry;
-    e.storage().instance().get(&key).unwrap()
-}
-
 pub fn has_proposed_removed(env:Env) -> bool {
     env.storage().instance().has(&DataKey::ProposedProtocolToRemove)
 }
