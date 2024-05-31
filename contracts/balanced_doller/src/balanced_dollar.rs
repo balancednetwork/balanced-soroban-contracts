@@ -6,6 +6,7 @@ mod xcall {
 
 use soroban_rlp::messages::{cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert};
 use crate::storage_types::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+use crate::states::read_administrator;
 
 use crate::{
      config::{ get_config, set_config, ConfigData}, xcall_manager_interface::XcallManagerClient
@@ -16,7 +17,6 @@ use crate::errors::ContractError;
 use xcall::{AnyMessage, CallMessageWithRollback, Client, Envelope};
 use soroban_token_sdk::TokenUtils;
 use crate::contract;
-use crate::admin::read_administrator;
 
 const CROSS_TRANSFER: &str = "xCrossTransfer";
 const CROSS_TRANSFER_REVERT: &str = "xCrossTransferRevert";
