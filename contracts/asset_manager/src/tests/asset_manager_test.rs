@@ -112,7 +112,6 @@ fn test_veryfy_rate_limit() {
     let percentage = &300;
     client.configure_rate_limit( &ctx.token, period, percentage );
 
-    client.configure_rate_limit( &ctx.token, &300, &300 );
     let token_client = token::Client::new(&ctx.env, &ctx.token);
     let stellar_asset_client: token::StellarAssetClient = token::StellarAssetClient::new(&ctx.env, &ctx.token);
     let amount_i128: i128 = 100000 ;
@@ -143,7 +142,6 @@ fn test_veryfy_rate_limit_panic_exceeds_withdraw_limit() {
     let percentage = &300;
     client.configure_rate_limit( &ctx.token, period, percentage );
 
-    client.configure_rate_limit( &ctx.token, &300, &300 );
     let token_client = token::Client::new(&ctx.env, &ctx.token);
     let stellar_asset_client: token::StellarAssetClient = token::StellarAssetClient::new(&ctx.env, &ctx.token);
     let amount_i128: i128 = 100000 ;
@@ -378,4 +376,15 @@ fn test_handle_call_message_for_deposit_rollback_panic_with_only_call_service(){
     client.handle_call_message(&ctx.xcall, &ctx.xcall_manager.to_string(), &data, &sources);
     
     assert_eq!(token_client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+}
+
+#[test]
+fn test_extend_ttl() {
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.init_context(&client);
+
+    client.configure_rate_limit( &ctx.token, &300, &300 );
+    
+    client.extend_ttl();
 }

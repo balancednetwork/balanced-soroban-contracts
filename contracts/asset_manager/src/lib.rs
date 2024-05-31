@@ -1,6 +1,5 @@
 #![no_std]
 
-pub mod admin;
 pub mod contract;
 pub mod storage_types;
 pub mod tests;

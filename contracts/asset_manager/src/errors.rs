@@ -14,6 +14,7 @@ pub enum ContractError {
     OnlyICONAssetManager = 8,
     OnlyCallService = 9,
     UnknownMessageType = 10,
-    AdminRequired = 11
+    AdminRequired = 11,
+    TokenExists = 12
 
 }

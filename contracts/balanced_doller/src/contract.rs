@@ -1,11 +1,11 @@
 //! This contract demonstrates a sample implementation of the Soroban token
 //! interface.
-use crate::admin::{has_administrator, read_administrator, write_administrator};
 use crate::allowance::{read_allowance, spend_allowance, write_allowance};
 use crate::balance::{read_balance, receive_balance, spend_balance};
 use crate::config::ConfigData;
 use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
 use crate::storage_types::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+use crate::states::{has_administrator, read_administrator, write_administrator };
 use soroban_sdk::token::{self, Interface as _};
 use soroban_sdk::{contract, contractimpl, panic_with_error, Address, Bytes, Env, String, Vec};
 use soroban_token_sdk::metadata::TokenMetadata;
@@ -60,10 +60,6 @@ impl BalancedDollar {
         let admin = read_administrator(&e);
         admin.require_auth();
 
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
         write_administrator(&e, &new_admin);
         TokenUtils::new(&e).events().set_admin(admin, new_admin);
     }
@@ -102,17 +98,20 @@ impl BalancedDollar {
        balanced_dollar::_handle_call_message(e, from, data, protocols);
     }
 
-    pub fn is_initialized(e: Env) -> Address {
-        read_administrator(&e)
-     }
+    pub fn is_initialized(e: Env) -> bool {
+        has_administrator(&e)
+    }
+
+    pub fn extend_ttl(e: Env){
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+    }
 }
 
 #[contractimpl]
 impl token::Interface for BalancedDollar {
     fn allowance(e: Env, from: Address, spender: Address) -> i128 {
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_allowance(&e, from, spender).amount
     }
 
@@ -121,10 +120,6 @@ impl token::Interface for BalancedDollar {
 
         check_nonnegative_amount(amount);
 
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
         write_allowance(&e, from.clone(), spender.clone(), amount, expiration_ledger);
         TokenUtils::new(&e)
             .events()
@@ -132,9 +127,6 @@ impl token::Interface for BalancedDollar {
     }
 
     fn balance(e: Env, id: Address) -> i128 {
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_balance(&e, id)
     }
 
@@ -142,11 +134,6 @@ impl token::Interface for BalancedDollar {
         from.require_auth();
 
         check_nonnegative_amount(amount);
-
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
         spend_balance(&e, from.clone(), amount);
         receive_balance(&e, to.clone(), amount);
         TokenUtils::new(&e).events().transfer(from, to, amount);
@@ -156,10 +143,6 @@ impl token::Interface for BalancedDollar {
         spender.require_auth();
 
         check_nonnegative_amount(amount);
-
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         spend_allowance(&e, from.clone(), spender, amount);
         spend_balance(&e, from.clone(), amount);
@@ -175,10 +158,6 @@ impl token::Interface for BalancedDollar {
         spender.require_auth();
 
         check_nonnegative_amount(amount);
-
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         spend_allowance(&e, from.clone(), spender, amount);
         spend_balance(&e, from.clone(), amount);

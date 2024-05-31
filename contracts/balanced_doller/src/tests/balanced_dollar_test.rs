@@ -5,7 +5,7 @@ use crate::contract::BalancedDollarClient;
 
 use soroban_rlp::messages::{cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert};
 use soroban_sdk::{
-    symbol_short, testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation}, vec, xdr::FromXdr, Address, Bytes, IntoVal, String, Symbol, Val, Vec
+    symbol_short, testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation}, Address, Bytes, IntoVal, String, Vec
 };
 use super::setup::*;
 
@@ -16,8 +16,8 @@ fn test_initialize() {
 
     ctx.init_context(&client);
 
-    let registry_exists = client.is_initialized();
-    assert_eq!(registry_exists, ctx.admin)
+    let initialized = client.is_initialized();
+    assert_eq!(initialized, true)
     
 }
 
@@ -238,3 +238,13 @@ fn test_handle_call_message_for_cross_transfer_revert_panic_for_xcall(){
     assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
 }
 
+#[test]
+fn test_extend_ttl(){
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+
+    client.extend_ttl()
+}

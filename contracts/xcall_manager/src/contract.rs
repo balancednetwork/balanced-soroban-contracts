@@ -4,10 +4,9 @@ mod xcall {
 }
 use soroban_rlp::messages::{configure_protocols::ConfigureProtocols, execute::Execute };
 use crate::{
-    admin:: {read_administrator, write_administrator}, 
     config::{get_config, set_config, ConfigData}, 
-    states::{has_state, write_address_state, read_string_state, read_vec_string_state, write_string_state, write_vec_string_state }, 
-    storage_types::{DataKey, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD }
+    states::{has_registry, has_proposed_removed, read_administrator, write_administrator, write_registry,
+        read_destinations, write_destinations, read_sources, write_sources, read_proposed_removed, write_proposed_removed, extend_ttl}, 
 };
 
 use crate::errors::ContractError;
@@ -22,11 +21,11 @@ pub struct XcallManager;
 impl XcallManager {
     
     pub fn initialize(env:Env, registry:Address, admin: Address, config: ConfigData, sources: Vec<String>, destinations: Vec<String>) {
-        if has_state(env.clone(), DataKey::Registry) {
+        if has_registry(env.clone()) {
             panic_with_error!(env, ContractError::ContractAlreadyInitialized)
         }
-        write_address_state(&env, DataKey::Registry, &registry);
-        write_address_state(&env, DataKey::Admin, &admin);
+        write_registry(&env, &registry);
+        write_administrator(&env, &admin);
         Self::configure(env, config, sources, destinations );
     }
 
@@ -35,8 +34,8 @@ impl XcallManager {
         admin.require_auth();
 
         set_config(&env, config);
-        write_vec_string_state(&env, DataKey::Sources, &sources);
-        write_vec_string_state(&env, DataKey::Destinations, &destinations);
+        write_sources(&env, &sources);
+        write_destinations(&env, &destinations);
     }
 
     pub fn get_config(env: Env) -> ConfigData{
@@ -46,10 +45,6 @@ impl XcallManager {
     pub fn set_admin(e: Env, new_admin: Address) {
         let admin = read_administrator(&e);
         admin.require_auth();
-
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         write_administrator(&e, &new_admin);
     }
@@ -62,24 +57,24 @@ impl XcallManager {
         let admin = read_administrator(&e);
         admin.require_auth();
         
-        write_string_state(&e, DataKey::ProposedProtocolToRemove, &protocol);     
+        write_proposed_removed(&e, &protocol);     
     }
 
     pub fn get_proposed_removal(e: Env) -> String {
-        read_string_state(&e, DataKey::ProposedProtocolToRemove)
+        read_proposed_removed(&e)
     }
 
     pub fn verify_protocols(
         e: Env,
         protocols: Vec<String>
     )  -> Result<bool, ContractError> {
-        let sources: Vec<String> = read_vec_string_state(&e, DataKey::Sources);
+        let sources: Vec<String> = read_sources(&e);
         return Self::verify_protocols_unordered(e, protocols, sources);
     }
 
     pub fn get_protocols(e: Env) -> Result<(Vec<String>, Vec<String>), ContractError> {
-        let sources = read_vec_string_state(&e, DataKey::Sources);
-        let destinations = read_vec_string_state(&e, DataKey::Destinations);
+        let sources = read_sources(&e);
+        let destinations = read_destinations(&e);
         Ok((sources, destinations))
     }
 
@@ -127,7 +122,7 @@ impl XcallManager {
 
         let method = ConfigureProtocols::get_method(&e.clone(), data.clone());
 
-        let sources = read_vec_string_state(&e, DataKey::Sources);
+        let sources = read_sources(&e);
         if !Self::verify_protocols_unordered(e.clone(), protocols.clone(), sources).unwrap() {
                 if method != String::from_str(&e.clone(), CONFIGURE_PROTOCOLS_NAME)  {
                     panic_with_error!(e, ContractError::ProtocolMismatch)
@@ -144,8 +139,8 @@ impl XcallManager {
             let message = ConfigureProtocols::decode(&e, data);
             let sources = message.sources;
             let destinations = message.destinations;
-            write_vec_string_state(&e, DataKey::Sources, &sources);
-            write_vec_string_state(&e, DataKey::Destinations, &destinations);
+            write_sources(&e, &sources);
+            write_destinations(&e, &destinations);
         } else {
             panic_with_error!(e, ContractError::UnknownMessageType)
         }
@@ -160,12 +155,12 @@ impl XcallManager {
     }
 
     pub fn get_modified_protocols(e: Env) -> Vec<String>{
-        if !has_state(e.clone(), DataKey::ProposedProtocolToRemove) {
+        if !has_proposed_removed(e.clone()) {
             panic_with_error!(e, ContractError::NoProposalForRemovalExists)
         }
 
-        let sources = read_vec_string_state(&e, DataKey::Sources);
-        let protocol_to_remove = read_string_state(&e, DataKey::ProposedProtocolToRemove);
+        let sources = read_sources(&e);
+        let protocol_to_remove = read_proposed_removed(&e);
         let mut new_array = Vec::new(&e);
         for s in sources.iter() {
             if !s.eq(&protocol_to_remove) {
@@ -176,4 +171,7 @@ impl XcallManager {
         return new_array;
     } 
 
+    pub fn extend_ttl(e: Env){
+        extend_ttl(&e);
+    }
 }

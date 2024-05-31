@@ -23,21 +23,8 @@ pub struct AllowanceValue {
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
-    Registry,
     Allowance(AllowanceDataKey),
     Balance(Address),
-    Nonce(Address),
-    State(Address),
     Admin,
     Config
-}
-
-#[derive(Clone)]
-#[contracttype]
-pub enum BnUSDDataKey {
-    Xcall,
-    XcallNetworkAddress,
-    Nid,
-    IconBnUSD,
-    XcallManager
 }

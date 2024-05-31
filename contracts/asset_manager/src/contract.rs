@@ -6,10 +6,11 @@ mod xcall {
 }
 use soroban_rlp::messages::{deposit::Deposit, deposit_revert::DepositRevert, withdraw_to::WithdrawTo};
 use crate::{
-    admin::{read_administrator, write_administrator}, 
     config::{get_config, set_config, ConfigData}, 
-    states:: {has_state, read_u128_state, read_u64_state, write_address_state, write_u128_state, write_u64_state },
-    storage_types::{DataKey, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, POINTS}, xcall_manager_interface::XcallManagerClient
+    states:: {has_registry, read_administrator, read_token_last_current_limit, read_token_last_update, 
+        read_token_percentage, read_token_period, write_administrator, write_registry, write_token_current_limit, 
+        write_token_last_update, write_token_percentage, write_token_period, extent_ttl, read_tokens, write_tokens},
+    storage_types::{DataKey, POINTS}, xcall_manager_interface::XcallManagerClient
 };
 
 use crate::errors::ContractError;
@@ -27,11 +28,11 @@ pub struct AssetManager;
 impl AssetManager {
 
     pub fn initialize(env:Env, registry:Address, admin: Address, config: ConfigData) {
-        if has_state(env.clone(), DataKey::Registry) {
+        if has_registry(&env.clone()) {
             panic_with_error!(&env, ContractError::ContractAlreadyInitialized)
         }
 
-        write_address_state(&env, DataKey::Registry, &registry);
+        write_registry(&env, &registry);
         write_administrator(&env, &admin);
         Self::configure(env, config);
     }
@@ -43,10 +44,6 @@ impl AssetManager {
     pub fn set_admin(e: Env, new_admin: Address) {
         let admin = read_administrator(&e);
         admin.require_auth();
-
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         write_administrator(&e, &new_admin);
     }
@@ -70,31 +67,38 @@ impl AssetManager {
     ) {
         let admin = read_administrator(&env.clone());
         admin.require_auth();
+        let tokens = read_tokens(&env.clone());
+        if tokens.contains(&token) {
+            panic_with_error!(&env.clone(), ContractError::TokenExists)
+        }else{
+            write_tokens(&env, token.clone());
+        };
+
         if percentage > POINTS {
-            panic_with_error!(&env, ContractError::PercentageShouldBeLessThanOrEqualToPOINTS); 
+            panic_with_error!(&env.clone(), ContractError::PercentageShouldBeLessThanOrEqualToPOINTS); 
         }
         let token_client = token::Client::new(&env, &token);
         let contract_token_balance = token_client.balance(&env.current_contract_address());
         
-        write_u128_state(&env, DataKey::Period(token.clone()), &period);
-        write_u128_state(&env, DataKey::Percentage(token.clone()), &percentage);
-        write_u64_state(&env, DataKey::LastUpdate(token.clone()), &env.ledger().timestamp());
-        write_u128_state(&env, DataKey::CurrentLimit(token.clone()), &((contract_token_balance as u128) * percentage/POINTS));
+        write_token_period(&env.clone(), &token.clone(), period);
+        write_token_percentage(&env.clone(), &token.clone(), percentage);
+        write_token_last_update(&env.clone(), &token.clone(), env.ledger().timestamp());
+        write_token_current_limit(&env.clone(), &token.clone(), (contract_token_balance as u128) * percentage/POINTS);
     }
 
-    pub fn get_rate_limit(env: Env, token: Address ) -> (u128, u128, u128, u128){
+    pub fn get_rate_limit(env: Env, token: Address ) -> (u128, u128, u64, u128){
         (
-            read_u128_state(&env, DataKey::Period(token.clone())),
-            read_u128_state(&env, DataKey::Percentage(token.clone())),
-            read_u128_state(&env, DataKey::LastUpdate(token.clone())),
-            read_u128_state(&env, DataKey::CurrentLimit(token.clone())),
+            read_token_period(&env, &token.clone()),
+            read_token_percentage(&env, &token.clone()),
+            read_token_last_update(&env, &token.clone()),
+            read_token_last_current_limit(&env, &token.clone()),
         )
     }
 
     pub fn reset_limit(env: Env, token: Address){
         let token_client = token::Client::new(&env, &token);
         let contract_token_balance = token_client.balance(&env.current_contract_address());
-        let percentage: u128 = read_u128_state(&env, DataKey::Percentage(token.clone()));
+        let percentage: u128 = read_token_percentage(&env, &token.clone());
 
         env.storage().instance().set(&DataKey::CurrentLimit(token.clone()), &(u128::try_from(contract_token_balance).unwrap()*percentage/POINTS));
     }
@@ -109,14 +113,14 @@ impl AssetManager {
         let limit = Self::calculate_limit(env.clone(), token.clone())?;
         if balance - amount < limit { panic_with_error!(&env, ContractError::ExceedsWithdrawLimit); };
 
-        write_u128_state(&env, DataKey::CurrentLimit(token.clone()), &limit);
-        write_u64_state(&env, DataKey::LastUpdate(token.clone()), &env.ledger().timestamp());
+        write_token_current_limit(&env, &token.clone(), limit);
+        write_token_last_update(&env, &token.clone(), env.ledger().timestamp());
         Ok(true)
     }
 
     pub fn calculate_limit(env: Env, token: Address) -> Result<u128, ContractError> {
-        let period: u128 = read_u128_state(&env, DataKey::Period(token.clone()));
-        let percentage: u128 =  read_u128_state(&env, DataKey::Percentage(token.clone()));
+        let period: u128 = read_token_period(&env, &token.clone());
+        let percentage: u128 =  read_token_percentage(&env, &token.clone());
         if period == 0 {
             return Ok(0);
         }
@@ -127,11 +131,11 @@ impl AssetManager {
         let max_limit = (balance * percentage) / POINTS;
 
         let max_withdraw = balance - max_limit;
-        let last_update: u64 = read_u64_state(&env, DataKey::LastUpdate(token.clone()));
+        let last_update: u64 = read_token_last_update(&env, &token.clone());
         let time_diff = &env.ledger().timestamp() - last_update;
 
         let added_allowed_withdrawal = (max_withdraw * u128::from(time_diff)) / period;
-        let current_limit: u128 = read_u128_state(&env, DataKey::CurrentLimit(token.clone()));
+        let current_limit: u128 = read_token_last_current_limit(&env, &token.clone());
         let limit: u128 = current_limit - added_allowed_withdrawal;
 
         let limit = if balance < limit {  balance   } else { limit };
@@ -260,7 +264,7 @@ impl AssetManager {
     }
 
     pub fn has_registry(e: Env) -> bool {
-        has_state(e, DataKey::Registry)
+        has_registry(&e)
     }
 
     pub fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
@@ -268,6 +272,10 @@ impl AssetManager {
         admin.require_auth();
 
         e.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    pub fn extend_ttl(e: Env){
+        extent_ttl(&e);
     }
 
 }
