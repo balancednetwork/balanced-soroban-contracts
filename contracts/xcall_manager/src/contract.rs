@@ -2,7 +2,7 @@ use soroban_sdk::{contract, contractimpl, Address, Bytes, Env, String, Vec, pani
 mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm" );
 }
-use soroban_rlp::messages::{configure_protocols::ConfigureProtocols, execute::Execute };
+use soroban_rlp::messages::configure_protocols::ConfigureProtocols;
 use crate::{
     config::{get_config, set_config, ConfigData}, 
     states::{has_registry, has_proposed_removed, read_administrator, write_administrator, write_registry,
@@ -12,7 +12,6 @@ use crate::{
 use crate::errors::ContractError;
 
 const CONFIGURE_PROTOCOLS_NAME: &str = "ConfigureProtocols";
-const EXECUTE_NAME: &str = "Execute";
 
 #[contract]
 pub struct XcallManager;
@@ -130,12 +129,7 @@ impl XcallManager {
             Self::verify_protocol_recovery(e.clone(), protocols);
         }
 
-        if method == String::from_str(&e.clone(),  EXECUTE_NAME) {
-            let message = Execute::decode(&e.clone(), data);
-            // (bool _success, ) = message.contractAddress.call(message.data);
-            // require(_success, "Failed to excute message");
-            //e.invoke_contract(&message.contract_address, &Symbol::new(&e.clone(), "test"), data);
-        } else if method == String::from_str(&e, CONFIGURE_PROTOCOLS_NAME) {
+        if method == String::from_str(&e, CONFIGURE_PROTOCOLS_NAME) {
             let message = ConfigureProtocols::decode(&e, data);
             let sources = message.sources;
             let destinations = message.destinations;
