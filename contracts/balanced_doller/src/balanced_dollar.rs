@@ -79,7 +79,7 @@ pub fn _handle_call_message(
     let icon_bn_usd = get_config(&e).icon_bn_usd;
     if method == String::from_str(&e, &CROSS_TRANSFER){
         if from!=icon_bn_usd {
-            panic_with_error!(e, ContractError::onlyICONBnUSD)
+            panic_with_error!(e, ContractError::OnlyIconBnUSD)
         }
         let message = CrossTransfer::decode(&e.clone(), data);
         _mint(e.clone(), Address::from_string( &message.to), u128::try_into(message.amount).unwrap());

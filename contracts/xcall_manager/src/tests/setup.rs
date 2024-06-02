@@ -11,7 +11,7 @@ use crate::config::ConfigData;
 use soroban_sdk::Vec;
 use soroban_sdk::{
     testutils::Address as _,
-    token, Address, Env, String
+    Address, Env, String
 };
 
 mod xcall {
@@ -101,15 +101,4 @@ impl TestContext {
         connection_client.set_fee(&self.nid, &message_fee, &response_fee);
     }
     
-    pub fn mint_native_token(&self, address: &Address, amount: u128) {
-        let native_token_client = token::StellarAssetClient::new(&self.env, &self.native_token);
-        native_token_client.mint(&address, &(*&amount as i128));
-    }
-
-    pub fn get_native_token_balance(&self, address: &Address) -> u128 {
-        let native_token_client = token::TokenClient::new(&self.env, &self.native_token);
-        let balance = native_token_client.balance(address);
-
-        *&balance as u128
-    }
 }
