@@ -96,7 +96,7 @@ pub fn _handle_call_message(
 
 pub fn _mint(e: Env, to: Address, amount: i128) {
     contract::check_nonnegative_amount(amount);
-    let admin = read_administrator(&e);
+    let admin: Address = read_administrator(&e);
 
     e.storage()
         .instance()
