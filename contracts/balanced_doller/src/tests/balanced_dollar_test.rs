@@ -55,14 +55,14 @@ fn test_cross_transfer_with_to_and_data(){
     let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
     ctx.init_context(&client);
 
-    let amount_i128: i128 = 100000 ;
+    let amount_i128: i128 = 100000i128 ;
     let amount = &(amount_i128 as u128);
     let mint_amount = &(amount_i128+amount_i128);
     
     client.mint(&ctx.depositor, mint_amount);
 
-    ctx.mint_native_token(&ctx.depositor, 500);
-    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 500);
+    ctx.mint_native_token(&ctx.depositor, 500u128);
+    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 500u128);
 
     client.approve(&ctx.depositor, &ctx.registry, &(amount_i128+amount_i128), &1312000);
     let data: [u8; 32] = [
@@ -73,7 +73,7 @@ fn test_cross_transfer_with_to_and_data(){
     ];
     client.cross_transfer_data(&ctx.depositor, &amount, &String::from_str(&ctx.env, "icon01/hxjkdvhui"), &Bytes::from_array(&ctx.env, &data));
     std::println!("call");
-    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 400) // why 300?
+    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 400u128) // why 300?
 }
 
 
@@ -85,7 +85,7 @@ fn test_handle_call_message_for_cross_transfer(){
 
     ctx.init_context(&client);
     
-    let bnusd_amount = 100000 as u128;
+    let bnusd_amount = 100000u128;
 
     let items: [u8; 32] = [
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -115,7 +115,7 @@ fn test_handle_call_message_for_cross_transfer_panic_for_protocol_mismatch(){
 
     ctx.init_context(&client);
     
-    let bnusd_amount = 100000 as u128;
+    let bnusd_amount = 100000u128;
 
     let items: [u8; 32] = [
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -144,7 +144,7 @@ fn test_handle_call_message_for_cross_transfer_panic_for_icon_bnusd(){
 
     ctx.init_context(&client);
     
-    let bnusd_amount = 100000 as u128;
+    let bnusd_amount = 100000u128;
 
     let items: [u8; 32] = [
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -173,7 +173,7 @@ fn test_handle_call_message_for_cross_transfer_panic_for_wront_message_type(){
 
     ctx.init_context(&client);
     
-    let bnusd_amount = 100000 as u128;
+    let bnusd_amount = 100000u128;
 
     let items: [u8; 32] = [
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -201,7 +201,7 @@ fn test_handle_call_message_for_cross_transfer_revert(){
 
     ctx.init_context(&client);
     
-    let bnusd_amount = 100000 as u128;
+    let bnusd_amount = 100000u128;
 
     let data = CrossTransferRevert::new( ctx.withdrawer.clone(), bnusd_amount).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransferRevert"));
     let decoded = CrossTransferRevert::decode(&ctx.env, data.clone());
@@ -224,7 +224,7 @@ fn test_handle_call_message_for_cross_transfer_revert_panic_for_xcall(){
 
     ctx.init_context(&client);
     
-    let bnusd_amount = 100000 as u128;
+    let bnusd_amount = 100000u128;
 
     let data = CrossTransferRevert::new( ctx.withdrawer.clone(), bnusd_amount).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransferRevert"));
     let decoded = CrossTransferRevert::decode(&ctx.env, data.clone());
