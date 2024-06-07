@@ -95,21 +95,25 @@ impl AssetManager {
     }
 
     pub fn reset_limit(env: Env, token: Address){
-        let token_client = token::Client::new(&env, &token);
-        let contract_token_balance = token_client.balance(&env.current_contract_address());
+        let balance = Self::get_token_balance(env.clone(), token.clone());
         let percentage: u128 = read_token_percentage(&env, &token.clone());
 
-        env.storage().instance().set(&DataKey::CurrentLimit(token.clone()), &(u128::try_from(contract_token_balance).unwrap()*percentage/POINTS));
+        env.storage().instance().set(&DataKey::CurrentLimit(token.clone()), &(balance*percentage/POINTS));
     }
 
     pub fn get_withdraw_limit(env: Env, token: Address) -> Result<u128, ContractError>  {
-        return Ok(Self::calculate_limit(env, token)?)
+        let balance = Self::get_token_balance(env.clone(), token.clone());
+        return Ok(Self::calculate_limit(env, balance, token)?)
+    }
+
+    fn get_token_balance(env: Env, token: Address) -> u128 {
+        let token_client = token::Client::new(&env, &token);
+        return token_client.balance(&env.current_contract_address()) as u128
     }
 
     pub fn verify_withdraw(env: Env, token: Address, amount: u128) -> Result<bool, ContractError> {
-        let token_client = token::Client::new(&env, &token);
-        let balance = token_client.balance(&env.current_contract_address()) as u128;
-        let limit = Self::calculate_limit(env.clone(), token.clone())?;
+        let balance = Self::get_token_balance(env.clone(), token.clone());
+        let limit = Self::calculate_limit(env.clone(), balance, token.clone())?;
         if balance - amount < limit { panic_with_error!(&env, ContractError::ExceedsWithdrawLimit); };
 
         write_token_current_limit(&env, &token.clone(), limit);
@@ -117,15 +121,12 @@ impl AssetManager {
         Ok(true)
     }
 
-    pub fn calculate_limit(env: Env, token: Address) -> Result<u128, ContractError> {
+    pub fn calculate_limit(env: Env, balance: u128, token: Address) -> Result<u128, ContractError> {
         let period: u128 = read_token_period(&env, &token.clone());
         let percentage: u128 =  read_token_percentage(&env, &token.clone());
         if period == 0 {
             return Ok(0);
         }
-
-        let token_client = token::Client::new(&env, &token);
-        let balance = token_client.balance(&env.current_contract_address()) as u128;
 
         let max_limit = (balance * percentage) / POINTS;
 

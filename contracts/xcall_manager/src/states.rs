@@ -23,7 +23,7 @@ pub fn has_registry(env:Env) -> bool {
 pub fn write_registry(e: &Env, id: &Address) {
     let key = DataKey::Registry;
     e.storage().instance().set(&key, id);
-}
+} 
 
 pub fn has_proposed_removed(env:Env) -> bool {
     env.storage().instance().has(&DataKey::ProposedProtocolToRemove)
