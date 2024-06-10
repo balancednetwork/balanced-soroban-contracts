@@ -1,6 +1,6 @@
 use soroban_sdk::{contracttype, Address};
 
-pub(crate) const  POINTS: u128 = 1000;
+pub(crate) const  POINTS: u128 = 10000;
 
 #[derive(Clone)]
 #[contracttype]
