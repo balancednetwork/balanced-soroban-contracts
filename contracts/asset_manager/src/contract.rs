@@ -11,7 +11,6 @@ use crate::{
         write_token_last_update, write_token_percentage, write_token_period, extent_ttl, read_tokens, write_tokens},
     storage_types::{DataKey, POINTS}, xcall_manager_interface::XcallManagerClient
 };
-
 use crate::errors::ContractError;
 
 use xcall::{AnyMessage, CallMessageWithRollback, Client, Envelope};
@@ -132,7 +131,7 @@ impl AssetManager {
 
         let max_withdraw = balance - max_limit;
         let last_update: u64 = read_token_last_update(&env, &token.clone());
-        let time_diff = &env.ledger().timestamp() - last_update;
+        let time_diff = (&env.ledger().timestamp() - last_update)/1000;
 
         let added_allowed_withdrawal = (max_withdraw *  time_diff as u128) / period;
         let current_limit: u128 = read_token_last_current_limit(&env, &token.clone());
