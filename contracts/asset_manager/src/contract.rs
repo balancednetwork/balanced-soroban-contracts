@@ -113,8 +113,7 @@ impl AssetManager {
 
     pub fn verify_withdraw(env: Env, token: Address, amount: u128) -> Result<bool, ContractError> {
         let balance = Self::get_token_balance(env.clone(), token.clone());
-        //uncomment below code once test completes
-        let limit = balance - amount - 1;  //Self::calculate_limit(env.clone(), balance, token.clone())?;
+        let limit = Self::calculate_limit(env.clone(), balance, token.clone())?;
         if balance - amount < limit { panic_with_error!(&env, ContractError::ExceedsWithdrawLimit); };
 
         write_token_current_limit(&env, &token.clone(), limit);
