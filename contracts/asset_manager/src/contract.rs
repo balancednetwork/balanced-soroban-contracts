@@ -131,18 +131,18 @@ impl AssetManager {
 
         let max_limit = (balance * percentage) / POINTS;
 
-        let max_withdraw = balance - max_limit;
-        let last_update: u64 = read_token_last_update(&env, &token.clone());
-        let time_diff = &env.ledger().timestamp() - last_update;
+        // let max_withdraw = balance - max_limit;
+        // let last_update: u64 = read_token_last_update(&env, &token.clone());
+        // let time_diff = &env.ledger().timestamp() - last_update;
 
-        let added_allowed_withdrawal = (max_withdraw * u128::from(time_diff)) / period;
-        let current_limit: u128 = read_token_last_current_limit(&env, &token.clone());
-        let limit: u128 = current_limit - added_allowed_withdrawal;
+        // let added_allowed_withdrawal = (max_withdraw * u128::from(time_diff)) / period;
+        // let current_limit: u128 = read_token_last_current_limit(&env, &token.clone());
+        // let limit: u128 = current_limit - added_allowed_withdrawal;
 
-        let limit = if balance < limit {  balance   } else { limit };
+        // let limit = if balance < limit {  balance   } else { limit };
                      
-        let final_limit = if limit > max_limit { limit } else { max_limit };
-         Ok(final_limit)
+        // let final_limit = if limit > max_limit { limit } else { max_limit };
+         Ok(max_limit)
     }
 
     pub fn deposit(
