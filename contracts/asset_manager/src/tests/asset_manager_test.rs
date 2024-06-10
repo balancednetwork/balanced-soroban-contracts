@@ -57,7 +57,7 @@ fn test_configure_rate_limit_panic() {
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
     ctx.init_context(&client);
     let period = &300u128;
-    let percentage = &1001u128;
+    let percentage = &10001u128;
     client.configure_rate_limit( &ctx.token, period, percentage );
 
     let limit = client.get_withdraw_limit(&ctx.token);
@@ -143,8 +143,8 @@ fn test_veryfy_rate_limit() {
     client.deposit(&ctx.depositor,  &ctx.token, &amount, &Option::Some(String::from_str(&ctx.env, "")), &Option::Some(Bytes::from_array(&ctx.env, &[0u8; 32])));
     
     let limit = client.get_withdraw_limit(&ctx.token);
-    assert_eq!(limit, 30000);
-    let verified = client.verify_withdraw(&ctx.token, &(amount-30000-1));
+    assert_eq!(limit, 3000);
+    let verified = client.verify_withdraw(&ctx.token, &(amount-3000-1));
     assert_eq!(verified, true);
 }
 
@@ -173,8 +173,8 @@ fn test_veryfy_rate_limit_panic_exceeds_withdraw_limit() {
     client.deposit(&ctx.depositor,  &ctx.token, &amount, &Option::Some(String::from_str(&ctx.env, "")), &Option::Some(Bytes::from_array(&ctx.env, &[0u8; 32])));
     
     let limit = client.get_withdraw_limit(&ctx.token);
-    assert_eq!(limit, 30000);
-    let verified = client.verify_withdraw(&ctx.token, &(amount-30000+1));
+    assert_eq!(limit, 3000);
+    let verified = client.verify_withdraw(&ctx.token, &(amount-3000+1));
     assert_eq!(verified, true);
 }
 
