@@ -35,7 +35,7 @@ impl CrossTransfer{
         list.push_back(encoder::encode_string(&e, self.from.clone()));
         list.push_back(encoder::encode_string(&e, self.to.clone()));
         list.push_back(encoder::encode_u128(&e, self.amount.clone()));
-        list.push_back(self.data.clone());
+        list.push_back(encoder::encode(&e, self.data.clone()));
 
         let encoded = encoder::encode_list(&e, list, false);
         encoded
@@ -43,10 +43,9 @@ impl CrossTransfer{
 
     pub fn decode(e: &Env, bytes: Bytes) -> CrossTransfer {
         let decoded = decoder::decode_list(&e, bytes);
-        //todo: check length
-        // if decoded.len() != 5 {
-        //     panic!("InvalidRlpLength");
-        // }
+        if decoded.len() != 5 {
+            panic!("InvalidRlpLength");
+        }
 
         let from = decoder::decode_string(e, decoded.get(1).unwrap());
         let to = decoder::decode_string(e, decoded.get(2).unwrap());

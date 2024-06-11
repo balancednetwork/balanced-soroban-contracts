@@ -189,6 +189,7 @@ fn test_handle_call_message_for_cross_transfer_panic_for_wront_message_type(){
     ];
     let withdrawer = String::from_str(&ctx.env, "stellar/CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33");
     let data = CrossTransfer::new(ctx.depositor.to_string(), withdrawer.clone(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransferPanic"));
+    
     let decoded: CrossTransfer = CrossTransfer::decode(&ctx.env, data.clone());
     let withdrawer_address = &Address::from_string(&String::from_str(&ctx.env, "CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33"));
     assert_eq!(decoded.to, withdrawer);

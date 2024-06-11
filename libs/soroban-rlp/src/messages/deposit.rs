@@ -50,7 +50,7 @@ impl Deposit{
         list.push_back(encoder::encode_string(&e, self.from.clone()));
         list.push_back(encoder::encode_string(&e, self.to.clone()));
         list.push_back(encoder::encode_u128(&e, self.amount.clone()));
-        list.push_back(self.data.clone());
+        list.push_back(encoder::encode(&e, self.data.clone()));
 
         let encoded = encoder::encode_list(&e, list, false);
         encoded
