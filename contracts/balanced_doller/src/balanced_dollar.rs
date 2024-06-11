@@ -1,4 +1,4 @@
-use soroban_sdk::{panic_with_error, Address, Bytes, Env, String, Vec};
+use soroban_sdk::{panic_with_error, Address, Bytes, Env, String, Vec, xdr::ToXdr};
 use crate::balance::{spend_balance, receive_balance};
 mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
@@ -81,8 +81,10 @@ pub fn _handle_call_message(
         if from!=icon_bn_usd {
             panic_with_error!(e, ContractError::OnlyIconBnUSD)
         }
+
         let message = CrossTransfer::decode(&e.clone(), data);
-        _mint(e.clone(), Address::from_string( &message.to), u128::try_into(message.amount).unwrap());
+        let to_network_address = get_address(message.to.clone(), &e.clone());
+        _mint(e.clone(), to_network_address, u128::try_into(message.amount).unwrap());
     } else if method == String::from_str(&e, &CROSS_TRANSFER_REVERT){
         if from!=xcall.to_string() {
             panic_with_error!(e, ContractError::OnlyCallService)
@@ -92,6 +94,37 @@ pub fn _handle_call_message(
     }else{
         panic_with_error!(e, ContractError::UnknownMessageType)
     }
+}
+
+pub fn get_address(network_address: String, env: &Env) -> Address {
+    let bytes = network_address.to_xdr(&env);
+
+    if bytes.get(6).unwrap() > 0 {
+        panic!("Invalid network address length")
+    }
+
+    let value_len = bytes.get(7).unwrap();
+    let slice = bytes.slice(8..value_len as u32 + 8);
+    let mut nid = Bytes::new(&env);
+    let mut account = Bytes::new(&env);
+
+    let mut has_seperator = false;
+    for (index, value) in slice.clone().iter().enumerate() {
+        if has_seperator {
+            account.append(&slice.slice(index as u32..slice.len()));
+            break;
+        } else if value == 47 {
+            has_seperator = true;
+        } else {
+            nid.push_back(value)
+        }
+    }
+
+    if !has_seperator {
+        panic!("Invalid network address")
+    }
+
+    Address::from_string_bytes(&account)
 }
 
 pub fn _mint(e: Env, to: Address, amount: i128) {
