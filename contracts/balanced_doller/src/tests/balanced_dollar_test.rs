@@ -93,15 +93,17 @@ fn test_handle_call_message_for_cross_transfer(){
         0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
         0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
     ];
-    let data = CrossTransfer::new(ctx.depositor.to_string(), ctx.withdrawer.to_string(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
+    let withdrawer = String::from_str(&ctx.env, "stellar/CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33");
+    let data = CrossTransfer::new(ctx.depositor.to_string(), withdrawer.clone(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
     let decoded = CrossTransfer::decode(&ctx.env, data.clone());
-    assert_eq!(decoded.to, ctx.withdrawer.to_string());
+    assert_eq!(decoded.to, withdrawer);
 
-    assert_eq!(client.balance(&ctx.withdrawer), 0);
+    let withdrawer_address = &Address::from_string(&String::from_str(&ctx.env, "CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33"));
+    assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
     client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
-    assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+    assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128) 
     
     
 }
@@ -123,16 +125,18 @@ fn test_handle_call_message_for_cross_transfer_panic_for_protocol_mismatch(){
         0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
         0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
     ];
-    let data = CrossTransfer::new(ctx.depositor.to_string(), ctx.withdrawer.to_string(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
+    let withdrawer = String::from_str(&ctx.env, "stellar/CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33");
+    let data = CrossTransfer::new(ctx.depositor.to_string(), withdrawer.clone(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
     let decoded = CrossTransfer::decode(&ctx.env, data.clone());
-    assert_eq!(decoded.to, ctx.withdrawer.to_string());
+    assert_eq!(decoded.to, withdrawer);
 
-    assert_eq!(client.balance(&ctx.withdrawer), 0);
+    let withdrawer_address = &Address::from_string(&String::from_str(&ctx.env, "CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33"));
+    assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.xcall.to_string()]);
     client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
     
-    assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+    assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128) 
 }
 
 #[test]
@@ -152,16 +156,18 @@ fn test_handle_call_message_for_cross_transfer_panic_for_icon_bnusd(){
         0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
         0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
     ];
-    let data = CrossTransfer::new(ctx.depositor.to_string(), ctx.withdrawer.to_string(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
+    let withdrawer = String::from_str(&ctx.env, "stellar/CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33");
+    let data = CrossTransfer::new(ctx.depositor.to_string(), withdrawer.clone(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
     let decoded = CrossTransfer::decode(&ctx.env, data.clone());
-    assert_eq!(decoded.to, ctx.withdrawer.to_string());
+    assert_eq!(decoded.to, withdrawer);
 
-    assert_eq!(client.balance(&ctx.withdrawer), 0);
+    let withdrawer_address = &Address::from_string(&String::from_str(&ctx.env, "CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33"));
+    assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
     client.handle_call_message( &ctx.icon_governance, &data, &sources);
     
-    assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+    assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128) 
 }
 
 #[test]
@@ -181,16 +187,18 @@ fn test_handle_call_message_for_cross_transfer_panic_for_wront_message_type(){
         0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
         0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
     ];
-    let data = CrossTransfer::new(ctx.depositor.to_string(), ctx.withdrawer.to_string(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransferPanic"));
-    let decoded = CrossTransfer::decode(&ctx.env, data.clone());
-    assert_eq!(decoded.to, ctx.withdrawer.to_string());
+    let withdrawer = String::from_str(&ctx.env, "stellar/CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33");
+    let data = CrossTransfer::new(ctx.depositor.to_string(), withdrawer.clone(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransferPanic"));
+    let decoded: CrossTransfer = CrossTransfer::decode(&ctx.env, data.clone());
+    let withdrawer_address = &Address::from_string(&String::from_str(&ctx.env, "CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33"));
+    assert_eq!(decoded.to, withdrawer);
 
-    assert_eq!(client.balance(&ctx.withdrawer), 0);
+    assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
     client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
     
-    assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+    assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128) 
 }
 
 #[test]
