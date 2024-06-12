@@ -7,7 +7,6 @@ mod xcall {
 use soroban_rlp::messages::{cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert};
 use crate::storage_types::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use crate::states::read_administrator;
-
 use crate::{
      config::{ get_config, set_config, ConfigData}, xcall_manager_interface::XcallManagerClient
 };
@@ -81,19 +80,19 @@ pub fn _handle_call_message(
         if from!=icon_bn_usd {
             panic_with_error!(e, ContractError::OnlyIconBnUSD)
         }
-
         let message = CrossTransfer::decode(&e.clone(), data);
         let to_network_address = get_address(message.to.clone(), &e.clone());
-        _mint(e.clone(), to_network_address, u128::try_into(message.amount).unwrap());
+        _mint(e.clone(), to_network_address, message.amount as i128 );
     } else if method == String::from_str(&e, &CROSS_TRANSFER_REVERT){
         if from!=xcall.to_string() {
             panic_with_error!(e, ContractError::OnlyCallService)
         }
         let message = CrossTransferRevert::decode(&e.clone(), data);
-        _mint(e.clone(), message.to, u128::try_into(message.amount).unwrap());
+        _mint(e.clone(), message.to, message.amount as i128);
     }else{
         panic_with_error!(e, ContractError::UnknownMessageType)
     }
+
 }
 
 pub fn get_address(network_address: String, env: &Env) -> Address {
