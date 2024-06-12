@@ -102,6 +102,7 @@ impl XcallManager {
 
     pub fn handle_call_message(
         e: Env,
+        _xcall: Address,
         from: String,
         data: Bytes,
         protocols: Vec<String>
