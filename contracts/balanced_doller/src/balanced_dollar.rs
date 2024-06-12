@@ -84,7 +84,8 @@ pub fn _handle_call_message(
         let to_network_address = get_address(message.to.clone(), &e.clone());
         _mint(e.clone(), to_network_address, message.amount as i128 );
     } else if method == String::from_str(&e, &CROSS_TRANSFER_REVERT){
-        if from!=xcall.to_string() {
+        let xcall_network_address = self::xcall_client(e.clone()).get_network_address();
+        if from!=xcall_network_address {
             panic_with_error!(e, ContractError::OnlyCallService)
         }
         let message = CrossTransferRevert::decode(&e.clone(), data);
