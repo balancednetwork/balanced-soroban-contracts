@@ -219,7 +219,7 @@ fn test_handle_call_message_for_cross_transfer_revert(){
     assert_eq!(client.balance(&ctx.withdrawer), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message(&ctx.xcall, &ctx.xcall.to_string(), &data, &sources);
+    client.handle_call_message(&ctx.xcall, &ctx.xcall_client.get_network_address(), &data, &sources);
     
     assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128) 
 }

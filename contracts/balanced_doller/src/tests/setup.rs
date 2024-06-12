@@ -39,7 +39,8 @@ pub struct TestContext {
     pub token: Address,
     pub centralized_connection: Address,
     pub nid: String,
-    pub native_token: Address
+    pub native_token: Address,
+    pub xcall_client: xcall::Client<'static>
 }
 
 impl TestContext {
@@ -61,7 +62,7 @@ impl TestContext {
             admin: Address::generate(&env),
             depositor: Address::generate(&env),
             withdrawer: Address::generate(&env),
-            xcall: xcall, 
+            xcall: xcall.clone(), 
             xcall_manager: xcall_manager,
             icon_bn_usd: String::from_str(&env, "icon01/hxjnfh4u"),
             icon_governance: String::from_str(&env, "icon01/kjdnoi"),
@@ -69,6 +70,7 @@ impl TestContext {
             centralized_connection: centralized_connection,
             nid: String::from_str(&env, "stellar"),
             native_token: env.register_stellar_asset_contract(token_admin.clone()),
+            xcall_client: xcall::Client::new(&env, &xcall),
             env
         }
     }
