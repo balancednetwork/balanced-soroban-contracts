@@ -261,6 +261,33 @@ fn test_handle_call_message_for_withdraw_to(){
 }
 
 #[test]
+#[should_panic(expected = "HostError: Error(Contract, #13)")]
+fn test_handle_call_message_for_withdraw_to_invalid_address(){
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    client.configure_rate_limit( &ctx.token, &300u128, &300u128);
+    
+    let bnusd_amount = 100000u128;
+    let token_client = token::Client::new(&ctx.env, &ctx.token);
+    let stellar_asset_client: token::StellarAssetClient = token::StellarAssetClient::new(&ctx.env, &ctx.token);
+    stellar_asset_client.mint(&ctx.registry, &((bnusd_amount*2) as i128));
+
+    let data = WithdrawTo::new(ctx.token.to_string(), String::from_str(&ctx.env, "InvalidAddress"), bnusd_amount).encode(&ctx.env, String::from_str(&ctx.env, "WithdrawTo"));
+    let decoded = WithdrawTo::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, String::from_str(&ctx.env, "InvalidAddress"));
+
+    assert_eq!(token_client.balance(&ctx.withdrawer), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    client.handle_call_message(&ctx.xcall, &ctx.icon_asset_manager, &data, &sources);
+    
+    assert_eq!(token_client.balance(&ctx.withdrawer), bnusd_amount as i128) 
+}
+
+#[test]
 #[should_panic(expected = "HostError: Error(Contract, #7)")]
 fn test_handle_call_message_for_withdraw_to_panic_with_protocal_mismatch(){
     let ctx = TestContext::default();
