@@ -15,6 +15,7 @@ pub enum ContractError {
     OnlyCallService = 9,
     UnknownMessageType = 10,
     AdminRequired = 11,
-    TokenExists = 12
+    TokenExists = 12,
+    InvalidAddress = 13
 
 }

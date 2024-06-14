@@ -1,6 +1,6 @@
 
-use soroban_sdk::{contract, contractimpl, token, Address, Bytes, BytesN, Env, String, Vec, panic_with_error};
-mod xcall {
+use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Bytes, BytesN, Env, String, Vec};
+mod xcall { 
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
 }
 use soroban_rlp::messages::{deposit::Deposit, deposit_revert::DepositRevert, withdraw_to::WithdrawTo};
@@ -215,6 +215,7 @@ impl AssetManager {
         protocols: Vec<String>
     )  -> Result<(), ContractError>  {
         get_config(&e).xcall.require_auth();
+        
         if !Self::xcall_manager(e.clone()).verify_protocols(&protocols) {
           panic_with_error!(&e, ContractError::ProtocolMismatch);
         };
@@ -225,11 +226,16 @@ impl AssetManager {
             if from != icon_asset_manager{
                 panic_with_error!(&e, ContractError::OnlyICONAssetManager);
             };
+
             let message = WithdrawTo::decode(&e, data);
+            if !Self::is_valid_address(&message.to) || !Self::is_valid_address(&message.token_address) {
+                panic_with_error!(&e, ContractError::InvalidAddress);
+            }
+            
             Self::withdraw(e, current_contract, Address::from_string(&message.token_address),  Address::from_string(&message.to), message.amount)?;
         } else if method == String::from_str(&e, &DEPOSIT_REVERT_NAME){
             let xcall_network_address = Self::xcall_client(e.clone()).get_network_address();
-        
+    
             if from !=  xcall_network_address {
                 panic_with_error!(&e, ContractError::OnlyCallService)
             };
@@ -251,6 +257,37 @@ impl AssetManager {
             Self::transfer_token_to(e, from, token, to, amount);
         }
         Ok(())
+    }
+
+    fn is_valid_address(address: &String) -> bool {
+        if address.len() != 56 {
+            return false;
+        }
+    
+        let mut address_bytes = [0u8; 56];
+        address.copy_into_slice(&mut address_bytes);
+    
+        let mut is_valid = true;
+    
+        if address_bytes[0] != b'G' && address_bytes[0] != b'C' {
+            is_valid = false;
+        }
+    
+        for &byte in &address_bytes {
+            if !Self::is_valid_base32(byte) {
+                is_valid = false;
+                break;
+            }
+        }
+    
+        is_valid
+    }
+    
+    fn is_valid_base32(byte: u8) -> bool {
+        match byte {
+            b'A'..=b'Z' | b'2'..=b'7' => true,
+            _ => false,
+        }
     }
 
     fn transfer_token_to(e: Env, from: Address, token: Address, to: Address, amount: u128){
