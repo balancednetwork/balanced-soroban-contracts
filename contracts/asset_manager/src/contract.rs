@@ -226,12 +226,12 @@ impl AssetManager {
         let current_contract = e.current_contract_address();
         if method == String::from_str(&e, &WITHDRAW_TO_NAME){
             if from != icon_asset_manager{
-                panic_with_error!(&e, ContractError::OnlyICONAssetManager);
+                return Err(ContractError::OnlyICONAssetManager);
             };
 
             let message = WithdrawTo::decode(&e, data);
             if !is_valid_string_address(&message.to) || !is_valid_string_address(&message.token_address) {
-                panic_with_error!(&e, ContractError::InvalidAddress);
+                return Err(ContractError::InvalidAddress);
             }
             
             Self::withdraw(e, current_contract, Address::from_string(&message.token_address),  Address::from_string(&message.to), message.amount)?;
@@ -239,19 +239,19 @@ impl AssetManager {
             let xcall_network_address = Self::xcall_client(e.clone()).get_network_address();
     
             if from !=  xcall_network_address {
-                panic_with_error!(&e, ContractError::OnlyCallService)
+                return Err(ContractError::OnlyCallService)
             };
             let message: DepositRevert = DepositRevert::decode(&e.clone(), data);
             Self::withdraw(e, current_contract, message.token_address,  message.to, message.amount)?;
         } else {
-            panic_with_error!(&e, ContractError::UnknownMessageType);
+            return Err(ContractError::UnknownMessageType);
         }
         Ok(())
     }
 
     pub fn withdraw(e: Env, from: Address, token: Address, to: Address, amount: u128) -> Result<(), ContractError> {
         if amount <= 0 {
-            panic_with_error!(&e, ContractError::AmountIsLessThanMinimumAmount);
+            return Err(ContractError::AmountIsLessThanMinimumAmount);
         }
         
         let verified = Self::verify_withdraw(e.clone(), token.clone(), amount)?;

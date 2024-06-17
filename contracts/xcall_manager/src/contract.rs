@@ -106,18 +106,18 @@ impl XcallManager {
         from: String,
         data: Bytes,
         protocols: Vec<String>
-    ) {
+    )  -> Result<(), ContractError> {
         let xcall = get_config(&e.clone()).xcall;
         xcall.require_auth();
 
         let icon_governance = get_config(&e.clone()).icon_governance;
         if from != icon_governance {
-            panic_with_error!(e, ContractError::OnlyICONGovernance)
+            return Err(ContractError::OnlyICONGovernance);
         }
 
         
         if !Self::verify_protocols(e.clone(), protocols.clone()).unwrap() {
-            panic_with_error!(e, ContractError::ProtocolMismatch)
+            return Err(ContractError::ProtocolMismatch)
         };
 
         let method = ConfigureProtocols::get_method(&e.clone(), data.clone());
@@ -125,9 +125,9 @@ impl XcallManager {
         let sources = read_sources(&e);
         if !Self::verify_protocols_unordered(e.clone(), protocols.clone(), sources).unwrap() {
                 if method != String::from_str(&e.clone(), CONFIGURE_PROTOCOLS_NAME)  {
-                    panic_with_error!(e, ContractError::ProtocolMismatch)
+                    return Err(ContractError::ProtocolMismatch)
                 }
-            Self::verify_protocol_recovery(e.clone(), protocols);
+            Self::verify_protocol_recovery(e.clone(), protocols)?;
         }
 
         if method == String::from_str(&e, CONFIGURE_PROTOCOLS_NAME) {
@@ -137,21 +137,23 @@ impl XcallManager {
             write_sources(&e, &sources);
             write_destinations(&e, &destinations);
         } else {
-            panic_with_error!(e, ContractError::UnknownMessageType)
+            return Err(ContractError::UnknownMessageType)
         }
+        Ok(())
     }
 
-    pub fn verify_protocol_recovery(e: Env, protocols: Vec<String>) {
-        let modified_sources = Self::get_modified_protocols(e.clone());
+    pub fn verify_protocol_recovery(e: Env, protocols: Vec<String>) -> Result<(), ContractError> {
+        let modified_sources = Self::get_modified_protocols(e.clone())?;
         let verify_unordered = Self::verify_protocols_unordered(e.clone(), modified_sources, protocols).unwrap();
         if !verify_unordered {
-            panic_with_error!(e, ContractError::ProtocolMismatch)
+            return Err(ContractError::ProtocolMismatch)
         }
+        Ok(())
     }
 
-    pub fn get_modified_protocols(e: Env) -> Vec<String>{
+    pub fn get_modified_protocols(e: Env) -> Result<Vec<String>, ContractError> {
         if !has_proposed_removed(e.clone()) {
-            panic_with_error!(e, ContractError::NoProposalForRemovalExists)
+            return Err(ContractError::NoProposalForRemovalExists)
         }
 
         let sources = read_sources(&e);
@@ -163,7 +165,7 @@ impl XcallManager {
             }
         }
         
-        return new_array;
+        return Ok(new_array);
     } 
 
     pub fn extend_ttl(e: Env){

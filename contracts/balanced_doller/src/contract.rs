@@ -73,9 +73,9 @@ impl BalancedDollar {
         from: Address,
         amount: u128,
         to: String,
-    ) {
+    )  -> Result<(), ContractError> {
         from.require_auth();
-        balanced_dollar::_cross_transfer(e.clone(), from, amount, to, Bytes::new(&e)).unwrap();
+        return balanced_dollar::_cross_transfer(e.clone(), from, amount, to, Bytes::new(&e));
     }
 
     pub fn cross_transfer_data(
@@ -84,9 +84,9 @@ impl BalancedDollar {
         amount: u128,
         to: String,
         data: Bytes
-    ) {
+    )  -> Result<(), ContractError> {
         from.require_auth();
-        balanced_dollar::_cross_transfer(e, from, amount, to, data).unwrap();
+        return balanced_dollar::_cross_transfer(e, from, amount, to, data);
     }
 
     pub fn handle_call_message(
@@ -95,8 +95,8 @@ impl BalancedDollar {
         from: String,
         data: Bytes,
         protocols: Vec<String>
-    ) {
-       balanced_dollar::_handle_call_message(e, xcall, from, data, protocols);
+    )  -> Result<(), ContractError> {
+        return balanced_dollar::_handle_call_message(e, xcall, from, data, protocols);
     }
 
     pub fn is_initialized(e: Env) -> bool {
