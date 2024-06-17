@@ -53,7 +53,7 @@ impl BalancedDollar {
         let admin = read_administrator(&e);
         admin.require_auth();
         
-        balanced_dollar::_mint(e, to, amount)
+        balanced_dollar::_mint(&e, to, amount)
     }
 
     pub fn set_admin(e: Env, new_admin: Address) {
@@ -152,7 +152,7 @@ impl token::Interface for BalancedDollar {
     }
 
     fn burn(e: Env, from: Address, amount: i128) {
-        balanced_dollar::_burn(e, from, amount);
+        balanced_dollar::_burn(&e, from, amount);
     }
 
     fn burn_from(e: Env, spender: Address, from: Address, amount: i128) {
