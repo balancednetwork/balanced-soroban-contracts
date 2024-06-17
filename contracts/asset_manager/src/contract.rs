@@ -4,6 +4,7 @@ mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
 }
 use soroban_rlp::messages::{deposit::Deposit, deposit_revert::DepositRevert, withdraw_to::WithdrawTo};
+use soroban_rlp::address_utils::is_valid_string_address;
 use crate::{
     config::{get_config, set_config, ConfigData}, 
     states:: {has_registry, read_administrator, read_token_last_current_limit, read_token_last_update, 
@@ -228,7 +229,7 @@ impl AssetManager {
             };
 
             let message = WithdrawTo::decode(&e, data);
-            if !Self::is_valid_address(&message.to) || !Self::is_valid_address(&message.token_address) {
+            if !is_valid_string_address(&message.to) || !is_valid_string_address(&message.token_address) {
                 panic_with_error!(&e, ContractError::InvalidAddress);
             }
             
@@ -257,37 +258,6 @@ impl AssetManager {
             Self::transfer_token_to(e, from, token, to, amount);
         }
         Ok(())
-    }
-
-    fn is_valid_address(address: &String) -> bool {
-        if address.len() != 56 {
-            return false;
-        }
-    
-        let mut address_bytes = [0u8; 56];
-        address.copy_into_slice(&mut address_bytes);
-    
-        let mut is_valid = true;
-    
-        if address_bytes[0] != b'G' && address_bytes[0] != b'C' {
-            is_valid = false;
-        }
-    
-        for &byte in &address_bytes {
-            if !Self::is_valid_base32(byte) {
-                is_valid = false;
-                break;
-            }
-        }
-    
-        is_valid
-    }
-    
-    fn is_valid_base32(byte: u8) -> bool {
-        match byte {
-            b'A'..=b'Z' | b'2'..=b'7' => true,
-            _ => false,
-        }
     }
 
     fn transfer_token_to(e: Env, from: Address, token: Address, to: Address, amount: u128){

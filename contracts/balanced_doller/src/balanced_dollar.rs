@@ -10,7 +10,7 @@ use crate::states::read_administrator;
 use crate::{
      config::{ get_config, set_config, ConfigData}, xcall_manager_interface::XcallManagerClient
 };
-
+use soroban_rlp::address_utils::is_valid_bytes_address;
 use crate::errors::ContractError;
 
 use xcall::{AnyMessage, CallMessageWithRollback, Client, Envelope};
@@ -81,6 +81,7 @@ pub fn _handle_call_message(
             panic_with_error!(e, ContractError::OnlyIconBnUSD)
         }
         let message = CrossTransfer::decode(&e.clone(), data);
+
         let to_network_address = get_address(message.to.clone(), &e.clone());
         _mint(e.clone(), to_network_address, message.amount as i128 );
     } else if method == String::from_str(&e, &CROSS_TRANSFER_REVERT){
@@ -124,6 +125,9 @@ pub fn get_address(network_address: String, env: &Env) -> Address {
         panic!("Invalid network address")
     }
 
+    if !is_valid_bytes_address(&account) {
+        panic_with_error!(&env, ContractError::InvalidAddress);
+    }
     Address::from_string_bytes(&account)
 }
 
