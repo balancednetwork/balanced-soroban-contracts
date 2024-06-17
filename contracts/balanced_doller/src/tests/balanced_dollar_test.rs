@@ -109,6 +109,38 @@ fn test_handle_call_message_for_cross_transfer(){
 }
 
 #[test]
+#[should_panic(expected = "HostError: Error(Contract, #8)")]
+fn test_handle_call_message_for_cross_transfer_invalid_addres_fail(){
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+
+    ctx.init_context(&client);
+    
+    let bnusd_amount = 100000u128;
+
+    let items: [u8; 32] = [
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+        0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+        0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
+    ];
+    let withdrawer = String::from_str(&ctx.env, "stellar/InvalidAddress");
+    let data = CrossTransfer::new(ctx.depositor.to_string(), withdrawer.clone(), bnusd_amount, Bytes::from_array(&ctx.env, &items)).encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
+    let decoded = CrossTransfer::decode(&ctx.env, data.clone());
+    assert_eq!(decoded.to, withdrawer);
+
+    // let withdrawer_address = &Address::from_string(&String::from_str(&ctx.env, "InvalidAddress"));
+    // assert_eq!(client.balance(withdrawer_address), 0);
+
+    let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    client.handle_call_message(&ctx.xcall, &ctx.icon_bn_usd, &data, &sources);
+   // assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128) 
+    
+    
+}
+
+#[test]
 #[should_panic(expected = "HostError: Error(Contract, #4)")]
 fn test_handle_call_message_for_cross_transfer_panic_for_protocol_mismatch(){
     let ctx = TestContext::default();

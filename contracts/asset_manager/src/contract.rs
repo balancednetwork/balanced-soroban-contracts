@@ -128,20 +128,21 @@ impl AssetManager {
             return Ok(0);
         }
 
-        let max_limit = (balance * percentage) / POINTS;
+        let min_reserve = (balance * percentage) / POINTS;
 
-        let max_withdraw = balance - max_limit;
+        let max_withdraw = balance - min_reserve;
         let last_update: u64 = read_token_last_update(&env, &token.clone());
         let time_diff = (&env.ledger().timestamp() - last_update)/1000;
 
-        let added_allowed_withdrawal = (max_withdraw *  time_diff as u128) / period;
-        let current_limit: u128 = read_token_last_current_limit(&env, &token.clone());
-        let limit: u128 = current_limit - added_allowed_withdrawal;
+        let allowed_withdrawal = (max_withdraw *  time_diff as u128) / period;
+        let mut reserve: u128 = read_token_last_current_limit(&env, &token.clone());
 
-        let limit = if balance < limit {  balance   } else { limit };
-                     
-        let final_limit = if limit > max_limit { limit } else { max_limit };
-         Ok(final_limit)
+        if reserve > allowed_withdrawal{
+            reserve = reserve - allowed_withdrawal;
+        }
+
+        let reserve = if reserve > min_reserve { reserve } else { min_reserve };
+         Ok(reserve)
     }
 
     pub fn deposit(
