@@ -62,6 +62,7 @@ pub fn _cross_transfer(
 
 pub fn _handle_call_message(
     e: Env,
+    xcall_address : Address, 
     from: String,
     data: Bytes,
     protocols: Vec<String>
@@ -79,12 +80,10 @@ pub fn _handle_call_message(
             panic_with_error!(e, ContractError::OnlyIconBnUSD)
         }
         let message = CrossTransfer::decode(&e.clone(), data);
-
         let to_network_address = get_address(message.to.clone(), &e.clone());
         _mint(e.clone(), to_network_address, message.amount as i128 );
     } else if method == String::from_str(&e, &CROSS_TRANSFER_REVERT){
-        let xcall_network_address = self::xcall_client(e.clone()).get_network_address();
-        if from!=xcall_network_address {
+        if xcall!=xcall_address {
             panic_with_error!(e, ContractError::OnlyCallService)
         }
         let message = CrossTransferRevert::decode(&e.clone(), data);
