@@ -1,4 +1,4 @@
-use soroban_sdk::{panic_with_error, Address, Bytes, Env, String, Vec, xdr::ToXdr};
+use soroban_sdk::{Address, Bytes, Env, String, Vec, xdr::ToXdr};
 use crate::balance::{spend_balance, receive_balance};
 mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
@@ -28,7 +28,7 @@ pub fn _cross_transfer(
     amount: u128,
     to: String,
     data: Bytes
-)  -> Result<(), ContractError> {
+) -> Result<(), ContractError> {
     _burn(e.clone(), from.clone(), amount as i128);
     let xcall_message = CrossTransfer::new(
         from.clone().to_string(),
@@ -56,7 +56,6 @@ pub fn _cross_transfer(
     let current_address = e.clone().current_contract_address();
     xcall_client(e).send_call(&from, &current_address, envelope, icon_bn_usd );
     Ok(())
-
 }
 
 
@@ -66,39 +65,39 @@ pub fn _handle_call_message(
     from: String,
     data: Bytes,
     protocols: Vec<String>
-) {
+) -> Result<(), ContractError> {
     let xcall = get_config(&e).xcall;
     xcall.require_auth();
     if !xcall_manager_client(e.clone()).verify_protocols(&protocols) {
-        panic_with_error!(e, ContractError::ProtocolMismatch)
+        return Err(ContractError::ProtocolMismatch)
     };
 
     let method = CrossTransfer::get_method(&e, data.clone());
     let icon_bn_usd = get_config(&e).icon_bn_usd;
     if method == String::from_str(&e, &CROSS_TRANSFER){
         if from!=icon_bn_usd {
-            panic_with_error!(e, ContractError::OnlyIconBnUSD)
+           return Err(ContractError::OnlyIconBnUSD);
         }
         let message = CrossTransfer::decode(&e.clone(), data);
-        let to_network_address = get_address(message.to.clone(), &e.clone());
+        let to_network_address: Address = get_address(message.to.clone(), &e.clone())?;
         _mint(e.clone(), to_network_address, message.amount as i128 );
     } else if method == String::from_str(&e, &CROSS_TRANSFER_REVERT){
         if xcall!=xcall_address {
-            panic_with_error!(e, ContractError::OnlyCallService)
+            return Err(ContractError::OnlyCallService)
         }
         let message = CrossTransferRevert::decode(&e.clone(), data);
         _mint(e.clone(), message.to, message.amount as i128);
     }else{
-        panic_with_error!(e, ContractError::UnknownMessageType)
+        return Err(ContractError::UnknownMessageType)
     }
-
+    Ok(())
 }
 
-pub fn get_address(network_address: String, env: &Env) -> Address {
+pub fn get_address(network_address: String, env: &Env) -> Result<Address, ContractError>  {
     let bytes = network_address.to_xdr(&env);
 
     if bytes.get(6).unwrap() > 0 {
-        panic!("Invalid network address length")
+       return Err(ContractError::InvalidNetworkAddressLength);
     }
 
     let value_len = bytes.get(7).unwrap();
@@ -119,13 +118,13 @@ pub fn get_address(network_address: String, env: &Env) -> Address {
     }
 
     if !has_seperator {
-        panic!("Invalid network address")
+        return Err(ContractError::InvalidNetworkAddress);
     }
 
     if !is_valid_bytes_address(&account) {
-        panic_with_error!(&env, ContractError::InvalidAddress);
+        return Err(ContractError::InvalidAddress);
     }
-    Address::from_string_bytes(&account)
+    Ok(Address::from_string_bytes(&account))
 }
 
 pub fn _mint(e: Env, to: Address, amount: i128) {
