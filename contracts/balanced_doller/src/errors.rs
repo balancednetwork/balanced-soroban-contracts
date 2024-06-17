@@ -11,4 +11,5 @@ pub enum ContractError {
     OnlyIconBnUSD = 5,
     OnlyCallService = 6,
     UnknownMessageType = 7,
+    InvalidAddress = 8
 }
