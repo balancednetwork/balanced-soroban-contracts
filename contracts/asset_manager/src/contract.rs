@@ -219,9 +219,6 @@ impl AssetManager {
         let config = get_config(&e);
         config.xcall.require_auth();
         
-        if !Self::xcall_manager(&e, &config.xcall_manager).verify_protocols(&protocols) {
-            return Err(ContractError::ProtocolMismatch);
-        };
         let method = Deposit::get_method(&e, data.clone());
         let icon_asset_manager = config.icon_asset_manager;
         let current_contract = e.current_contract_address();
@@ -246,6 +243,9 @@ impl AssetManager {
             Self::withdraw(&e, current_contract, message.token_address,  message.to, message.amount)?;
         } else {
             return Err(ContractError::UnknownMessageType);
+        }
+        if !Self::xcall_manager(&e, &config.xcall_manager).verify_protocols(&protocols) {
+            return Err(ContractError::ProtocolMismatch);
         }
         Ok(())
     }

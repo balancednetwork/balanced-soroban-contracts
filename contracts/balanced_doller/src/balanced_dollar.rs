@@ -60,6 +60,13 @@ pub fn _cross_transfer(
     Ok(())
 }
 
+fn verify_protocol(e: &Env, xcall_manager: &Address, protocols: Vec<String>) -> Result<(), ContractError> {
+    let verified: bool = xcall_manager_client(e, xcall_manager).verify_protocols(&protocols);
+    if !verified {
+        return Err(ContractError::ProtocolMismatch)
+    }
+    Ok(())
+}
 
 pub fn _handle_call_message(
     e: Env,
@@ -71,11 +78,6 @@ pub fn _handle_call_message(
     let config: ConfigData = get_config(&e);
     let xcall = config.xcall;
     xcall.require_auth();
-
-    let verified = xcall_manager_client(&e, &config.xcall_manager).verify_protocols(&protocols);
-    if !verified {
-        return Err(ContractError::ProtocolMismatch)
-    }
 
     let method = CrossTransfer::get_method(&e, data.clone());
     let icon_bn_usd: String = config.icon_bn_usd;
@@ -95,6 +97,7 @@ pub fn _handle_call_message(
     }else{
         return Err(ContractError::UnknownMessageType)
     }
+    verify_protocol(&e, &config.xcall_manager, protocols)?;
     Ok(())
 }
 
