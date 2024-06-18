@@ -8,7 +8,7 @@ pub trait XcallManagerInterface {
     fn verify_protocols(
         e: Env,
         protocols: Vec<String>
-    )  -> Result<bool, ContractError>;
+    )  -> bool;
 
     fn get_protocols(e: Env) -> Result<(Vec<String>, Vec<String>), ContractError>;
     

@@ -71,9 +71,11 @@ pub fn _handle_call_message(
     let config: ConfigData = get_config(&e);
     let xcall = config.xcall;
     xcall.require_auth();
-    if !xcall_manager_client(&e, &config.xcall_manager).verify_protocols(&protocols) {
+
+    let verified = xcall_manager_client(&e, &config.xcall_manager).verify_protocols(&protocols);
+    if !verified {
         return Err(ContractError::ProtocolMismatch)
-    };
+    }
 
     let method = CrossTransfer::get_method(&e, data.clone());
     let icon_bn_usd: String = config.icon_bn_usd;
