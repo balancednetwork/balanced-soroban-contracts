@@ -1,0 +1,26 @@
+[workspace]
+members = [
+    "asset_manager",
+    "balanced_dollar",
+    "xcall",
+    "xcall_manager"
+]
+
+[workspace.package]
+authors = ["Balanced<foo@icon.foundation>"]
+repository = "https://github.com/balancednetwork/balanced-soroban-contracts.git"
+version="0.1.0"
+
+[workspace.dependencies]
+
+
+[profile.release]
+opt-level = 'z'
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = 'abort'
+incremental = false
+overflow-checks = true
