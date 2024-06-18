@@ -211,13 +211,14 @@ impl AssetManager {
 
     pub fn handle_call_message(
         e: Env,
-        _xcall: Address,
+        xcall_address: Address,
         from: String,
         data: Bytes,
         protocols: Vec<String>
     )  -> Result<(), ContractError>  {
         let config = get_config(&e);
-        config.xcall.require_auth();
+        let xcall = config.xcall;
+        xcall.require_auth();
         
         let method = Deposit::get_method(&e, data.clone());
         let icon_asset_manager = config.icon_asset_manager;
@@ -234,9 +235,7 @@ impl AssetManager {
             
             Self::withdraw(&e, current_contract, Address::from_string(&message.token_address),  Address::from_string(&message.to), message.amount)?;
         } else if method == String::from_str(&e, &DEPOSIT_REVERT_NAME){
-            let xcall_network_address = Self::xcall_client(&e, &config.xcall).get_network_address();
-    
-            if from !=  xcall_network_address {
+            if xcall !=  xcall_address {
                return Err(ContractError::OnlyCallService)
             }
             let message: DepositRevert = DepositRevert::decode(&e.clone(), data);
