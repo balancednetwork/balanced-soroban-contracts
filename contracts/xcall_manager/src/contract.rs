@@ -66,9 +66,13 @@ impl XcallManager {
     pub fn verify_protocols(
         e: &Env,
         protocols: Vec<String>
-    )  -> Result<bool, ContractError> {
+    )  -> bool {
         let sources: Vec<String> = read_sources(e);
-        return Self::verify_protocols_unordered(protocols, sources);
+        let verified = Self::verify_protocols_unordered(protocols, sources);
+        if !verified.is_ok() {
+            return false;
+        }
+        return verified.unwrap()
     }
 
     pub fn get_protocols(e: Env) -> Result<(Vec<String>, Vec<String>), ContractError> {
@@ -116,7 +120,7 @@ impl XcallManager {
         }
 
         
-        if !Self::verify_protocols(&e, protocols.clone()).unwrap() {
+        if !Self::verify_protocols(&e, protocols.clone()) {
             return Err(ContractError::ProtocolMismatch)
         };
 

@@ -71,7 +71,7 @@ impl AssetManager {
             return Err(ContractError::TokenExists)
         }else{
             write_tokens(&env, token_address.clone());
-        };
+        }
 
         if percentage > POINTS {
             return Err(ContractError::PercentageShouldBeLessThanOrEqualToPOINTS); 
@@ -227,8 +227,8 @@ impl AssetManager {
         let current_contract = e.current_contract_address();
         if method == String::from_str(&e, &WITHDRAW_TO_NAME){
             if from != icon_asset_manager{
-                return Err(ContractError::OnlyICONAssetManager);
-            };
+               return Err(ContractError::OnlyICONAssetManager);
+            }
 
             let message = WithdrawTo::decode(&e, data);
             if !is_valid_string_address(&message.to) || !is_valid_string_address(&message.token_address) {
@@ -240,8 +240,8 @@ impl AssetManager {
             let xcall_network_address = Self::xcall_client(&e, &config.xcall).get_network_address();
     
             if from !=  xcall_network_address {
-                return Err(ContractError::OnlyCallService)
-            };
+               return Err(ContractError::OnlyCallService)
+            }
             let message: DepositRevert = DepositRevert::decode(&e.clone(), data);
             Self::withdraw(&e, current_contract, message.token_address,  message.to, message.amount)?;
         } else {
