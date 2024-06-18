@@ -22,7 +22,7 @@ mod connection {
 }
 
 mod xcall_manager {
-    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/xcall_manager.wasm" );
+    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/xcall_manager.wasm");
 }
 
 use xcall_manager::ConfigData as XcallManagerConfigData;

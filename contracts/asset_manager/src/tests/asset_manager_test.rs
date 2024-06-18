@@ -416,7 +416,7 @@ fn test_handle_call_message_for_deposit_rollback_panic_with_only_call_service(){
     assert_eq!(token_client.balance(&ctx.withdrawer), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message(&ctx.xcall, &ctx.xcall_manager.to_string(), &data, &sources);
+    client.handle_call_message(&ctx.xcall_manager, &ctx.xcall.to_string(), &data, &sources);
     
     assert_eq!(token_client.balance(&ctx.withdrawer), bnusd_amount as i128) 
 }
