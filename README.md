@@ -1,5 +1,1 @@
-# Temp-repo
-This repository is a template for quickly creating new repositories with key features like issue templates, lint checking, PR label checks, and important documents such as codeowners, code of conduct, and a License file.
-
-## How to Use
-Refer to [this GitHub guideline](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template) for creating a repository from this template.
+[![codecov](https://codecov.io/gh/balancednetwork/balanced-soroban-contracts/graph/badge.svg?token=6Epcv9Uek5)](https://codecov.io/gh/balancednetwork/balanced-soroban-contracts) ![build](https://github.com/balancednetwork/balanced-soroban-contracts/actions/workflows/build-test-soroban-contracts.yml/badge.svg)
