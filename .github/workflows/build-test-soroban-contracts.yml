@@ -1,4 +1,4 @@
-name: Build and Test Balanced Soroban contracts
+name: Build
 on:
   push:
     branches:
