@@ -24,8 +24,16 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Install wasm32
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo install --locked soroban-cli
+      - name: Build & Test soroban Contracts
+        run: |
+            soroban contract build
       - name: Generate code coverage
-        run: cargo llvm-cov --lcov --output-path lcov.info
+        run: 
+          cargo llvm-cov --lcov --output-path lcov.info
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
