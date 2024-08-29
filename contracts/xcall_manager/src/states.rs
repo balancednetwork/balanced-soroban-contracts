@@ -49,7 +49,6 @@ pub fn read_sources(e: &Env) -> Vec<String> {
     e.storage().instance().get(&key).unwrap()
 }
 
-
 pub fn write_destinations(e: &Env, id: &Vec<String>) {
     let key = DataKey::Destinations;
     e.storage().instance().set(&key, id);

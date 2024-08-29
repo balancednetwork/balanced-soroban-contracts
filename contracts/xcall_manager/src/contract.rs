@@ -1,13 +1,16 @@
-use soroban_sdk::{contract, contractimpl, Address, Bytes, Env, String, Vec, panic_with_error};
+use soroban_sdk::{contract, contractimpl, panic_with_error, Address, Bytes, BytesN, Env, String, Vec};
 mod xcall {
-    soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm" );
+    soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
 }
-use soroban_rlp::messages::configure_protocols::ConfigureProtocols;
 use crate::{
-    config::{get_config, set_config, ConfigData}, 
-    states::{has_registry, has_proposed_removed, read_administrator, write_administrator, write_registry,
-        read_destinations, write_destinations, read_sources, write_sources, read_proposed_removed, write_proposed_removed, extend_ttl}, 
+    config::{get_config, set_config, ConfigData},
+    states::{
+        extend_ttl, has_proposed_removed, has_registry, read_administrator, read_destinations,
+        read_proposed_removed, read_sources, write_administrator, write_destinations,
+        write_proposed_removed, write_registry, write_sources,
+    }, storage_types::DataKey, white_list_actions::WhiteListActions
 };
+use soroban_rlp::messages::configure_protocols::ConfigureProtocols;
 
 use crate::errors::ContractError;
 
@@ -18,17 +21,28 @@ pub struct XcallManager;
 
 #[contractimpl]
 impl XcallManager {
-    
-    pub fn initialize(env:Env, registry:Address, admin: Address, config: ConfigData, sources: Vec<String>, destinations: Vec<String>) {
+    pub fn initialize(
+        env: Env,
+        registry: Address,
+        admin: Address,
+        config: ConfigData,
+        sources: Vec<String>,
+        destinations: Vec<String>,
+    ) {
         if has_registry(env.clone()) {
             panic_with_error!(env, ContractError::ContractAlreadyInitialized)
         }
         write_registry(&env, &registry);
         write_administrator(&env, &admin);
-        Self::configure(env, config, sources, destinations );
+        Self::configure(env, config, sources, destinations);
     }
 
-    pub fn configure(env:Env, config: ConfigData, sources: Vec<String>, destinations: Vec<String>){
+    pub fn configure(
+        env: Env,
+        config: ConfigData,
+        sources: Vec<String>,
+        destinations: Vec<String>,
+    ) {
         let admin = read_administrator(&env);
         admin.require_auth();
 
@@ -37,7 +51,7 @@ impl XcallManager {
         write_destinations(&env, &destinations);
     }
 
-    pub fn get_config(env: Env) -> ConfigData{
+    pub fn get_config(env: Env) -> ConfigData {
         get_config(&env)
     }
 
@@ -55,18 +69,29 @@ impl XcallManager {
     pub fn propose_removal(e: Env, protocol: String) {
         let admin = read_administrator(&e);
         admin.require_auth();
-        
-        write_proposed_removed(&e, &protocol);     
+
+        write_proposed_removed(&e, &protocol);
     }
 
     pub fn get_proposed_removal(e: Env) -> String {
         read_proposed_removed(&e)
     }
 
-    pub fn verify_protocols(
-        e: Env,
-        protocols: Vec<String>
-    )  -> Result<bool, ContractError> {
+    pub fn white_list_actions(e: Env, action: Bytes) {
+        let actions = WhiteListActions::new(DataKey::WhiteListedActions);
+        actions.add(&e, action);
+    }
+
+    pub fn remove_action(e: Env, action: Bytes) -> Result<bool, ContractError> {
+        let actions = WhiteListActions::new(DataKey::WhiteListedActions);
+        if !actions.contains(&e, action.clone()){
+            return Err(ContractError::NotWhiteListed);
+        }
+        actions.remove(&e, action);
+        Ok(true)
+    }
+
+    pub fn verify_protocols(e: Env, protocols: Vec<String>) -> Result<bool, ContractError> {
         let sources: Vec<String> = read_sources(&e);
 
         let verified = Self::verify_protocols_unordered(protocols, sources)?;
@@ -79,7 +104,10 @@ impl XcallManager {
         Ok((sources, destinations))
     }
 
-    pub fn verify_protocols_unordered(array1: Vec<String>, array2: Vec<String>) -> Result<bool, ContractError> {
+    pub fn verify_protocols_unordered(
+        array1: Vec<String>,
+        array2: Vec<String>,
+    ) -> Result<bool, ContractError> {
         // Check if the arrays have the same length
         if array1.len() != array2.len() {
             return Ok(false);
@@ -87,16 +115,15 @@ impl XcallManager {
         for p in array1.iter() {
             let mut j = 0;
             for s in array2.iter() {
-                j = j+1;
+                j = j + 1;
                 if p.eq(&s) {
                     break;
                 } else {
-                    if j == array2.len()  {
-                         return Ok(false); 
+                    if j == array2.len() {
+                        return Ok(false);
                     }
                     continue;
                 }
-                
             }
         }
         return Ok(true);
@@ -107,8 +134,8 @@ impl XcallManager {
         _xcall: Address,
         from: String,
         data: Bytes,
-        protocols: Vec<String>
-    )  -> Result<(), ContractError> {
+        protocols: Vec<String>,
+    ) -> Result<(), ContractError> {
         let config = get_config(&e.clone());
         let xcall = config.xcall;
         xcall.require_auth();
@@ -117,18 +144,23 @@ impl XcallManager {
             return Err(ContractError::OnlyICONGovernance);
         }
 
-        
+        let actions = WhiteListActions::new(DataKey::WhiteListedActions);
+        if !actions.contains(&e, data.clone()){
+            return Err(ContractError::NotWhiteListed);
+        }
+        actions.remove(&e, data.clone());
+
         if !Self::verify_protocols(e.clone(), protocols.clone())? {
-            return Err(ContractError::ProtocolMismatch)
+            return Err(ContractError::ProtocolMismatch);
         };
 
         let method = ConfigureProtocols::get_method(&e.clone(), data.clone());
 
         let sources = read_sources(&e);
         if !Self::verify_protocols_unordered(protocols.clone(), sources).unwrap() {
-                if method != String::from_str(&e.clone(), CONFIGURE_PROTOCOLS_NAME)  {
-                    return Err(ContractError::ProtocolMismatch)
-                }
+            if method != String::from_str(&e.clone(), CONFIGURE_PROTOCOLS_NAME) {
+                return Err(ContractError::ProtocolMismatch);
+            }
             Self::verify_protocol_recovery(&e, protocols)?;
         }
 
@@ -139,23 +171,24 @@ impl XcallManager {
             write_sources(&e, &sources);
             write_destinations(&e, &destinations);
         } else {
-            return Err(ContractError::UnknownMessageType)
+            return Err(ContractError::UnknownMessageType);
         }
         Ok(())
     }
 
     pub fn verify_protocol_recovery(e: &Env, protocols: Vec<String>) -> Result<(), ContractError> {
         let modified_sources = Self::get_modified_protocols(e)?;
-        let verify_unordered = Self::verify_protocols_unordered(modified_sources, protocols).unwrap();
+        let verify_unordered =
+            Self::verify_protocols_unordered(modified_sources, protocols).unwrap();
         if !verify_unordered {
-            return Err(ContractError::ProtocolMismatch)
+            return Err(ContractError::ProtocolMismatch);
         }
         Ok(())
     }
 
     pub fn get_modified_protocols(e: &Env) -> Result<Vec<String>, ContractError> {
         if !has_proposed_removed(e.clone()) {
-            return Err(ContractError::NoProposalForRemovalExists)
+            return Err(ContractError::NoProposalForRemovalExists);
         }
 
         let sources = read_sources(&e);
@@ -166,11 +199,19 @@ impl XcallManager {
                 new_array.push_back(s);
             }
         }
-        
-        return Ok(new_array);
-    } 
 
-    pub fn extend_ttl(e: Env){
+        return Ok(new_array);
+    }
+
+    pub fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
+        let admin: Address = e.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+
+        e.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    pub fn extend_ttl(e: Env) {
         extend_ttl(&e);
     }
+    
 }

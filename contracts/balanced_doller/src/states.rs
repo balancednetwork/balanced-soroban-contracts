@@ -16,4 +16,3 @@ pub fn write_administrator(e: &Env, id: &Address) {
     let key = DataKey::Admin;
     e.storage().instance().set(&key, id);
 }
-

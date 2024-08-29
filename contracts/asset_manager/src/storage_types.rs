@@ -1,10 +1,10 @@
 use soroban_sdk::{contracttype, Address};
 
-pub(crate) const  POINTS: u128 = 10000;
+pub(crate) const POINTS: u128 = 10000;
 
 #[derive(Clone)]
 #[contracttype]
-pub enum DataKey{
+pub enum DataKey {
     Registry,
     Admin,
     Config,
@@ -12,6 +12,5 @@ pub enum DataKey{
     Period(Address),
     Percentage(Address),
     LastUpdate(Address),
-    CurrentLimit(Address)
+    CurrentLimit(Address),
 }
-

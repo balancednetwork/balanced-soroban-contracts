@@ -12,5 +12,6 @@ pub enum ContractError {
     OnlyCallService = 9,
     UnknownMessageType = 10,
     AdminRequired = 11,
-    NoProposalForRemovalExists = 12
+    NoProposalForRemovalExists = 12,
+    NotWhiteListed = 13,
 }

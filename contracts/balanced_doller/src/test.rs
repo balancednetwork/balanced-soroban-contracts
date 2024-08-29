@@ -3,19 +3,28 @@ extern crate std;
 
 use crate::{contract::BalancedDollar, BalancedDollarClient};
 use soroban_sdk::{
-    symbol_short, testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation}, Address, Env, IntoVal, String, Symbol
+    symbol_short,
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    Address, Env, IntoVal, String, Symbol,
 };
 
 fn create_token<'a>(e: &Env, admin: &Address) -> BalancedDollarClient<'a> {
     let token = BalancedDollarClient::new(e, &e.register_contract(None, BalancedDollar {}));
 
     let xcall = Address::generate(&e.clone());
-    let xcall_manager = Address::generate(&e.clone());    
+    let xcall_manager = Address::generate(&e.clone());
     let xcall_network_address = String::from_str(&e.clone(), "ste/address");
     let icon_bn_usd = String::from_str(&e.clone(), "icon/hxeoriweo");
     let nid = String::from_str(&e.clone(), "ste");
 
-    token.initialize(&admin, &xcall, &xcall_manager, &xcall_network_address, &icon_bn_usd, &nid);
+    token.initialize(
+        &admin,
+        &xcall,
+        &xcall_manager,
+        &xcall_network_address,
+        &icon_bn_usd,
+        &nid,
+    );
     token
 }
 
@@ -244,12 +253,26 @@ fn initialize_already_initialized() {
     let token = create_token(&e, &admin);
 
     let xcall = Address::generate(&e.clone());
-    let xcall_manager = Address::generate(&e.clone());    
+    let xcall_manager = Address::generate(&e.clone());
     let xcall_network_address = String::from_str(&e.clone(), "ste/address");
     let icon_bn_usd = String::from_str(&e.clone(), "icon/hxeoriweo");
     let nid = String::from_str(&e.clone(), "ste");
 
-    token.initialize(&admin, &xcall, &xcall_manager, &xcall_network_address, &icon_bn_usd, &nid);
+    token.initialize(
+        &admin,
+        &xcall,
+        &xcall_manager,
+        &xcall_network_address,
+        &icon_bn_usd,
+        &nid,
+    );
 
-    token.initialize(&admin, &xcall, &xcall_manager, &xcall_network_address, &icon_bn_usd, &nid);
+    token.initialize(
+        &admin,
+        &xcall,
+        &xcall_manager,
+        &xcall_network_address,
+        &icon_bn_usd,
+        &nid,
+    );
 }

@@ -1,6 +1,6 @@
-use soroban_sdk::{contracttype, Env, String, Bytes, Vec};
-use crate::encoder;
 use crate::decoder;
+use crate::encoder;
+use soroban_sdk::{contracttype, Bytes, Env, String, Vec};
 
 #[derive(Clone)]
 #[contracttype]
@@ -8,16 +8,16 @@ pub struct CrossTransfer {
     pub from: String,
     pub to: String,
     pub amount: u128,
-    pub data: Bytes
+    pub data: Bytes,
 }
 
-impl CrossTransfer{
+impl CrossTransfer {
     pub fn new(from: String, to: String, amount: u128, data: Bytes) -> Self {
         Self {
             from,
             to,
             amount,
-            data
+            data,
         }
     }
 
@@ -55,7 +55,7 @@ impl CrossTransfer{
             from,
             to,
             amount,
-            data
+            data,
         }
     }
 
