@@ -1,20 +1,19 @@
-use soroban_sdk::{contracttype, Env, String, Bytes, Vec};
-use crate::encoder;
 use crate::decoder;
+use crate::encoder;
+use soroban_sdk::{contracttype, Bytes, Env, String, Vec};
 
 #[derive(Clone)]
 #[contracttype]
 pub struct ConfigureProtocols {
-    pub sources: Vec<String>,    
-    pub destinations: Vec<String>
-}  
+    pub sources: Vec<String>,
+    pub destinations: Vec<String>,
+}
 
-
-impl ConfigureProtocols{
+impl ConfigureProtocols {
     pub fn new(sources: Vec<String>, destinations: Vec<String>) -> Self {
         Self {
             sources,
-            destinations
+            destinations,
         }
     }
 
@@ -41,12 +40,12 @@ impl ConfigureProtocols{
         if decoded.len() != 3 {
             panic!("InvalidRlpLength");
         }
-        
+
         let sources = decoder::decode_strings(e, decoded.get(1).unwrap());
         let destinations = decoder::decode_strings(e, decoded.get(2).unwrap());
         Self {
             sources,
-            destinations
+            destinations,
         }
     }
 

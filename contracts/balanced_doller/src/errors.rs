@@ -13,5 +13,5 @@ pub enum ContractError {
     UnknownMessageType = 7,
     InvalidAddress = 8,
     InvalidNetworkAddressLength = 9,
-    InvalidNetworkAddress = 10
+    InvalidNetworkAddress = 10,
 }

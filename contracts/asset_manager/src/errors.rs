@@ -16,6 +16,5 @@ pub enum ContractError {
     UnknownMessageType = 10,
     AdminRequired = 11,
     TokenExists = 12,
-    InvalidAddress = 13
-
+    InvalidAddress = 13,
 }

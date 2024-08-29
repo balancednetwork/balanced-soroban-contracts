@@ -2,12 +2,12 @@
 
 mod allowance;
 mod balance;
-pub mod contract;
-mod metadata;
-mod storage_types;
-mod states;
-mod tests;
-mod config;
 pub mod balanced_dollar;
+mod config;
+pub mod contract;
 mod errors;
+mod metadata;
+mod states;
+mod storage_types;
+mod tests;
 mod xcall_manager_interface;

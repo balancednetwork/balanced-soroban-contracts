@@ -1,19 +1,14 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::contract::{
-    BalancedDollar, BalancedDollarClient
-};
+use crate::contract::{BalancedDollar, BalancedDollarClient};
 
 use crate::config::ConfigData;
 
-use soroban_sdk::{
-    testutils::Address as _,
-    token, Vec, Address, Env, String,
-};
+use soroban_sdk::{testutils::Address as _, token, Address, Env, String, Vec};
 
 mod xcall {
-    soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm" );
+    soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
 }
 
 mod connection {
@@ -21,26 +16,28 @@ mod connection {
 }
 
 mod xcall_manager {
-    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/xcall_manager.wasm" );
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/xcall_manager.wasm"
+    );
 }
 
 use xcall_manager::ConfigData as XcallManagerConfigData;
 
 pub struct TestContext {
-    pub env: Env, 
-    pub registry:Address, 
-    pub admin: Address, 
+    pub env: Env,
+    pub registry: Address,
+    pub admin: Address,
     pub depositor: Address,
     pub withdrawer: Address,
-    pub xcall: Address, 
-    pub xcall_manager: Address, 
-    pub icon_bn_usd: String, 
+    pub xcall: Address,
+    pub xcall_manager: Address,
+    pub icon_bn_usd: String,
     pub icon_governance: String,
     pub token: Address,
     pub centralized_connection: Address,
     pub nid: String,
     pub native_token: Address,
-    pub xcall_client: xcall::Client<'static>
+    pub xcall_client: xcall::Client<'static>,
 }
 
 impl TestContext {
@@ -62,7 +59,7 @@ impl TestContext {
             admin: Address::generate(&env),
             depositor: Address::generate(&env),
             withdrawer: Address::generate(&env),
-            xcall: xcall.clone(), 
+            xcall: xcall.clone(),
             xcall_manager: xcall_manager,
             icon_bn_usd: String::from_str(&env, "icon01/hxjnfh4u"),
             icon_governance: String::from_str(&env, "icon01/kjdnoi"),
@@ -71,27 +68,42 @@ impl TestContext {
             nid: String::from_str(&env, "stellar"),
             native_token: env.register_stellar_asset_contract(token_admin.clone()),
             xcall_client: xcall::Client::new(&env, &xcall),
-            env
+            env,
         }
     }
 
     pub fn init_context(&self, client: &BalancedDollarClient<'static>) {
         self.env.mock_all_auths();
-        let config = ConfigData {xcall: self.xcall.clone(), xcall_manager: self.xcall_manager.clone(), nid: self.nid.clone(), icon_bn_usd: self.icon_bn_usd.clone()};
-        client.initialize( &self.admin, &config);
+        let config = ConfigData {
+            xcall: self.xcall.clone(),
+            xcall_manager: self.xcall_manager.clone(),
+            nid: self.nid.clone(),
+            icon_bn_usd: self.icon_bn_usd.clone(),
+        };
+        client.initialize(&self.admin, &config);
         self.init_xcall_manager_context();
         self.init_xcall_state();
     }
 
     pub fn init_xcall_manager_context(&self) {
         let client = self::xcall_manager::Client::new(&self.env, &self.xcall_manager);
-        let config = XcallManagerConfigData {xcall: self.xcall.clone(), icon_governance: self.icon_governance.clone()};
+        let config = XcallManagerConfigData {
+            xcall: self.xcall.clone(),
+            icon_governance: self.icon_governance.clone(),
+        };
         let sources = Vec::from_array(&self.env, [self.centralized_connection.to_string()]);
-        let destinations = Vec::from_array(&self.env, [String::from_str(&self.env, "icon/address")]);
-        client.initialize(&self.xcall_manager, &self.admin, &config, &sources, &destinations);
+        let destinations =
+            Vec::from_array(&self.env, [String::from_str(&self.env, "icon/address")]);
+        client.initialize(
+            &self.xcall_manager,
+            &self.admin,
+            &config,
+            &sources,
+            &destinations,
+        );
     }
 
-    pub fn init_xcall_state(&self){
+    pub fn init_xcall_state(&self) {
         let xcall_client = xcall::Client::new(&self.env, &self.xcall);
 
         xcall_client.initialize(&xcall::InitializeMsg {
@@ -119,7 +131,7 @@ impl TestContext {
         let response_fee = 100;
         connection_client.set_fee(&self.nid, &message_fee, &response_fee);
     }
-    
+
     pub fn mint_native_token(&self, address: &Address, amount: u128) {
         let native_token_client = token::StellarAssetClient::new(&self.env, &self.native_token);
         native_token_client.mint(&address, &(*&amount as i128));

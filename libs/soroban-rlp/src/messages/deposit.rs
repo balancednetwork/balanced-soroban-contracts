@@ -1,6 +1,6 @@
-use soroban_sdk::{contracttype, Env, String, Bytes, Vec};
-use crate::encoder;
 use crate::decoder;
+use crate::encoder;
+use soroban_sdk::{contracttype, Bytes, Env, String, Vec};
 
 #[derive(Clone)]
 #[contracttype]
@@ -9,17 +9,17 @@ pub struct Deposit {
     pub from: String,
     pub to: String,
     pub amount: u128,
-    pub data: Bytes
+    pub data: Bytes,
 }
 
-impl Deposit{
+impl Deposit {
     pub fn new(token_address: String, from: String, to: String, amount: u128, data: Bytes) -> Self {
         Self {
             token_address,
             from,
             to,
             amount,
-            data
+            data,
         }
     }
 
@@ -73,11 +73,11 @@ impl Deposit{
             from,
             to,
             amount,
-            data
+            data,
         }
     }
 
-    pub fn get_method(e: &Env, bytes: Bytes)-> String {
+    pub fn get_method(e: &Env, bytes: Bytes) -> String {
         let decoded = decoder::decode_list(&e, bytes);
         let method = decoder::decode_string(e, decoded.get(0).unwrap());
         method
