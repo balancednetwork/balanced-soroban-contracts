@@ -50,7 +50,6 @@ impl AssetManager {
         let admin = read_administrator(&env);
         admin.require_auth();
         
-
         write_administrator(&env, &new_admin);
     }
 
