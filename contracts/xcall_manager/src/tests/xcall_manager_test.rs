@@ -127,7 +127,7 @@ fn test_handle_call_message_for_configure_protocols_panic_for_action_not_whiteli
     assert_eq!(decoded.sources, sources);
     assert_eq!(decoded.destinations, destinations);
     let (s, _) = client.get_protocols();
-    client.handle_call_message(&ctx.xcall, &ctx.icon_governance, &data, &s);
+    client.handle_call_message( &ctx.icon_governance, &data, &s);
 
     let (s, d) = client.get_protocols();
     assert_eq!(s, sources);
@@ -158,7 +158,7 @@ fn test_handle_call_message_for_configure_protocols() {
     assert_eq!(decoded.sources, sources);
     assert_eq!(decoded.destinations, destinations);
     let (s, _) = client.get_protocols();
-    client.handle_call_message(&ctx.xcall, &ctx.icon_governance, &data, &s);
+    client.handle_call_message( &ctx.icon_governance, &data, &s);
 
     let (s, d) = client.get_protocols();
     assert_eq!(s, sources);
@@ -200,7 +200,7 @@ fn test_get_modified_proposals() {
         .encode(&ctx.env, String::from_str(&ctx.env, "ConfigureProtocols"));
     client.white_list_actions(&data);
     let (s, _) = client.get_protocols();
-    client.handle_call_message(&ctx.xcall, &ctx.icon_governance, &data, &s);
+    client.handle_call_message( &ctx.icon_governance, &data, &s);
 
     client.propose_removal(&String::from_str(&ctx.env, "stellar/address"));
 
@@ -230,7 +230,7 @@ fn test_get_modified_proposals_panic_no_proposed_removal() {
         .encode(&ctx.env, String::from_str(&ctx.env, "ConfigureProtocols"));
     client.white_list_actions(&data);
     let (s, _) = client.get_protocols();
-    client.handle_call_message(&ctx.xcall, &ctx.icon_governance, &data, &s);
+    client.handle_call_message(&ctx.icon_governance, &data, &s);
 
     let updated_protocal = vec![&ctx.env, String::from_str(&ctx.env, "stellar/address1")];
     assert_eq!(updated_protocal, client.get_modified_protocols());
@@ -261,7 +261,7 @@ fn test_handle_call_message_for_configure_protocols_panic_for_only_icon_governan
     assert_eq!(decoded.sources, sources);
     assert_eq!(decoded.destinations, destinations);
     let (s, _) = client.get_protocols();
-    client.handle_call_message(&ctx.xcall, &ctx.xcall_network_address, &data, &s);
+    client.handle_call_message(&ctx.xcall_network_address, &data, &s);
 
     let (s, d) = client.get_protocols();
     assert_eq!(s, sources);
@@ -293,7 +293,7 @@ fn test_handle_call_message_for_configure_protocols_panic_for_protocol_mismatch(
     assert_eq!(decoded.sources, sources);
     assert_eq!(decoded.destinations, destinations);
     let s = Vec::from_array(&ctx.env, [ctx.xcall.to_string()]);
-    client.handle_call_message(&ctx.xcall, &ctx.icon_governance, &data, &s);
+    client.handle_call_message( &ctx.icon_governance, &data, &s);
 
     let (s, d) = client.get_protocols();
     assert_eq!(s, sources);
@@ -328,7 +328,7 @@ fn test_handle_call_message_for_configure_protocols_panic_for_unknown_mesage_typ
     assert_eq!(decoded.sources, sources);
     assert_eq!(decoded.destinations, destinations);
     let s = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message(&ctx.xcall, &ctx.icon_governance, &data, &s);
+    client.handle_call_message(&ctx.icon_governance, &data, &s);
 
     let (s, d) = client.get_protocols();
     assert_eq!(s, sources);

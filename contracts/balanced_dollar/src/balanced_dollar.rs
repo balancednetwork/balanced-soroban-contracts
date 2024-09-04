@@ -11,7 +11,7 @@ use crate::{
     config::{get_config, set_config, ConfigData},
     xcall_manager_interface::XcallManagerClient,
 };
-use soroban_rlp::address_utils::is_valid_bytes_address;
+use soroban_rlp::address_utils::{get_address_from, is_valid_bytes_address};
 use soroban_rlp::messages::{
     cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert,
 };
@@ -72,7 +72,6 @@ fn verify_protocol(
 
 pub fn _handle_call_message(
     e: Env,
-    xcall_address: Address,
     from: String,
     data: Bytes,
     protocols: Vec<String>,
@@ -91,6 +90,8 @@ pub fn _handle_call_message(
         let to_network_address: Address = get_address(message.to, &e)?;
         _mint(&e, to_network_address, message.amount as i128);
     } else if method == String::from_str(&e, &CROSS_TRANSFER_REVERT) {
+        let from_xcall = get_address_from(&from, &e);
+        let xcall_address = Address::from_string(&from_xcall.into());
         if xcall != xcall_address {
             return Err(ContractError::OnlyCallService);
         }
