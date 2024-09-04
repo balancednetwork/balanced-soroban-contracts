@@ -121,7 +121,7 @@ fn test_handle_call_message_for_cross_transfer() {
     assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message(&ctx.xcall, &ctx.icon_bn_usd, &data, &sources);
+    client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
     assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128)
 }
 
@@ -156,7 +156,7 @@ fn test_handle_call_message_for_cross_transfer_invalid_addres_fail() {
     // assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message(&ctx.xcall, &ctx.icon_bn_usd, &data, &sources);
+    client.handle_call_message(&ctx.icon_bn_usd, &data, &sources);
     // assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128)
 }
 
@@ -197,7 +197,7 @@ fn test_handle_call_message_for_cross_transfer_panic_for_protocol_mismatch() {
     assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.xcall.to_string()]);
-    client.handle_call_message(&ctx.xcall, &ctx.icon_bn_usd, &data, &sources);
+    client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
 
     assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128)
 }
@@ -239,7 +239,7 @@ fn test_handle_call_message_for_cross_transfer_panic_for_icon_bnusd() {
     assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message(&ctx.xcall, &ctx.icon_governance, &data, &sources);
+    client.handle_call_message( &ctx.icon_governance, &data, &sources);
 
     assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128)
 }
@@ -282,7 +282,7 @@ fn test_handle_call_message_for_cross_transfer_panic_for_wront_message_type() {
     assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message(&ctx.xcall, &ctx.icon_bn_usd, &data, &sources);
+    client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
 
     assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128)
 }
@@ -306,7 +306,6 @@ fn test_handle_call_message_for_cross_transfer_revert() {
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
     client.handle_call_message(
-        &ctx.xcall,
         &ctx.xcall_client.get_network_address(),
         &data,
         &sources,
@@ -334,9 +333,16 @@ fn test_handle_call_message_for_cross_transfer_revert_panic_for_xcall() {
     assert_eq!(client.balance(&ctx.withdrawer), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    let wrong_network_address: String = String::from_str(
+        &ctx.env,
+        &std::format!(
+            "{}/{}",
+            "soroban",
+            "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL"
+        ),
+    );
     client.handle_call_message(
-        &ctx.centralized_connection,
-        &ctx.xcall_client.get_network_address(),
+        &wrong_network_address,
         &data,
         &sources,
     );

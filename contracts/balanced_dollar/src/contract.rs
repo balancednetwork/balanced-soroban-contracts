@@ -91,12 +91,11 @@ impl BalancedDollar {
 
     pub fn handle_call_message(
         e: Env,
-        xcall: Address,
         from: String,
         data: Bytes,
         protocols: Vec<String>,
     ) -> Result<(), ContractError> {
-        return balanced_dollar::_handle_call_message(e, xcall, from, data, protocols);
+        return balanced_dollar::_handle_call_message(e, from, data, protocols);
     }
 
     pub fn is_initialized(e: Env) -> bool {
