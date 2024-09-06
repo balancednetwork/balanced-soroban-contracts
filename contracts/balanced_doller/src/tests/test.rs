@@ -3,6 +3,7 @@ extern crate std;
 
 use crate::contract::BalancedDollarClient;
 
+
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
@@ -146,7 +147,6 @@ fn test_burn() {
 
     
     let user2 = Address::generate(&e);
-    //let token = create_token(&e, &admin);
 
     client.mint(&ctx.admin, &1000);
     assert_eq!(client.balance(&ctx.admin), 1000);

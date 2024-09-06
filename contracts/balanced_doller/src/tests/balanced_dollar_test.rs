@@ -4,7 +4,7 @@ extern crate std;
 use crate::contract::BalancedDollarClient;
 
 use super::setup::*;
-use soroban_rlp::messages::{
+use soroban_rlp::balanced::messages::{
     cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert,
 };
 use soroban_sdk::{

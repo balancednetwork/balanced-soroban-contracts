@@ -7,7 +7,7 @@ use soroban_sdk::{
     token, Address, Bytes, IntoVal, String, Symbol, Vec,
 };
 
-use soroban_rlp::messages::{deposit_revert::DepositRevert, withdraw_to::WithdrawTo};
+use soroban_rlp::balanced::messages::{deposit_revert::DepositRevert, withdraw_to::WithdrawTo};
 
 use super::setup::*;
 

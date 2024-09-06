@@ -4,7 +4,7 @@ extern crate std;
 use crate::contract::XcallManagerClient;
 
 use super::setup::*;
-use soroban_rlp::messages::configure_protocols::ConfigureProtocols;
+use soroban_rlp::balanced::messages::configure_protocols::ConfigureProtocols;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
