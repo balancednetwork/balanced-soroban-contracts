@@ -10,7 +10,7 @@ use crate::{
         write_proposed_removed, write_registry, write_sources,
     }, storage_types::DataKey, white_list_actions::WhiteListActions
 };
-use soroban_rlp::messages::configure_protocols::ConfigureProtocols;
+use soroban_rlp::balanced::messages::configure_protocols::ConfigureProtocols;
 
 use crate::errors::ContractError;
 
@@ -34,21 +34,10 @@ impl XcallManager {
         }
         write_registry(&env, &registry);
         write_administrator(&env, &admin);
-        Self::configure(env, config, sources, destinations);
-    }
-
-    pub fn configure(
-        env: Env,
-        config: ConfigData,
-        sources: Vec<String>,
-        destinations: Vec<String>,
-    ) {
-        let admin = read_administrator(&env);
-        admin.require_auth();
-
         set_config(&env, config);
         write_sources(&env, &sources);
         write_destinations(&env, &destinations);
+
     }
 
     pub fn get_config(env: Env) -> ConfigData {

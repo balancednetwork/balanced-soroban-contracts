@@ -16,8 +16,8 @@ use crate::{
     storage_types::{DataKey, POINTS},
     xcall_manager_interface::XcallManagerClient,
 };
-use soroban_rlp::address_utils::{get_address_from, is_valid_string_address};
-use soroban_rlp::messages::{
+use soroban_rlp::balanced::address_utils::{get_address_from, is_valid_string_address};
+use soroban_rlp::balanced::messages::{
     deposit::Deposit, deposit_revert::DepositRevert, withdraw_to::WithdrawTo,
 };
 
