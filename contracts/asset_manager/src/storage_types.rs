@@ -9,8 +9,14 @@ pub enum DataKey {
     Admin,
     Config,
     Tokens,
-    Period(Address),
-    Percentage(Address),
-    LastUpdate(Address),
-    CurrentLimit(Address),
+    TokenData(Address),
+}
+
+#[derive(Clone)]
+#[contracttype]
+pub struct TokenData {
+    pub period: u64,
+    pub percentage: u32,
+    pub last_update: u64,
+    pub current_limit: u64,
 }

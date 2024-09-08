@@ -1,6 +1,6 @@
 use soroban_sdk::{Address, Env, Vec};
 
-use crate::storage_types::DataKey;
+use crate::storage_types::{DataKey, TokenData};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17280;
 pub(crate) const INSTANCE_BUMP_AMOUNT: u32 = 30 * DAY_IN_LEDGERS;
@@ -36,44 +36,14 @@ pub fn write_registry(e: &Env, id: &Address) {
     e.storage().instance().set(&key, id);
 }
 
-pub fn write_token_period(e: &Env, token: &Address, period: u128) {
-    let key = DataKey::Period(token.clone());
-    e.storage().persistent().set(&key, &period);
+pub fn write_token_data(env: &Env, token_address: Address, data: TokenData) {
+    let key = DataKey::TokenData(token_address);
+    env.storage().persistent().set(&key, &data);
 }
 
-pub fn read_token_period(e: &Env, token: &Address) -> u128 {
-    let key = DataKey::Period(token.clone());
-    e.storage().persistent().get(&key).unwrap()
-}
-
-pub fn write_token_percentage(e: &Env, token: &Address, period: u128) {
-    let key = DataKey::Percentage(token.clone());
-    e.storage().persistent().set(&key, &period);
-}
-
-pub fn read_token_percentage(e: &Env, token: &Address) -> u128 {
-    let key = DataKey::Percentage(token.clone());
-    e.storage().persistent().get(&key).unwrap()
-}
-
-pub fn write_token_last_update(e: &Env, token: &Address, last_update: u64) {
-    let key = DataKey::LastUpdate(token.clone());
-    e.storage().persistent().set(&key, &last_update);
-}
-
-pub fn read_token_last_update(e: &Env, token: &Address) -> u64 {
-    let key = DataKey::LastUpdate(token.clone());
-    e.storage().persistent().get(&key).unwrap()
-}
-
-pub fn write_token_current_limit(e: &Env, token: &Address, current_limit: u128) {
-    let key = DataKey::CurrentLimit(token.clone());
-    e.storage().persistent().set(&key, &current_limit);
-}
-
-pub fn read_token_last_current_limit(e: &Env, token: &Address) -> u128 {
-    let key = DataKey::CurrentLimit(token.clone());
-    e.storage().persistent().get(&key).unwrap()
+pub fn read_token_data(env: &Env, token_address: Address) -> Option<TokenData> {
+    let key = DataKey::TokenData(token_address);
+    env.storage().persistent().get(&key)
 }
 
 pub fn write_tokens(e: &Env, token: Address) {
@@ -109,25 +79,12 @@ pub fn extent_ttl(e: &Env) {
         INSTANCE_BUMP_AMOUNT,
     );
     for token in tokens {
+
         e.storage().persistent().extend_ttl(
-            &DataKey::Period(token.clone()),
+            &DataKey::TokenData(token.clone()),
             INSTANCE_LIFETIME_THRESHOLD,
             INSTANCE_BUMP_AMOUNT,
         );
-        e.storage().persistent().extend_ttl(
-            &DataKey::Percentage(token.clone()),
-            INSTANCE_LIFETIME_THRESHOLD,
-            INSTANCE_BUMP_AMOUNT,
-        );
-        e.storage().persistent().extend_ttl(
-            &DataKey::LastUpdate(token.clone()),
-            INSTANCE_LIFETIME_THRESHOLD,
-            INSTANCE_BUMP_AMOUNT,
-        );
-        e.storage().persistent().extend_ttl(
-            &DataKey::CurrentLimit(token.clone()),
-            INSTANCE_LIFETIME_THRESHOLD,
-            INSTANCE_BUMP_AMOUNT,
-        );
+
     }
 }

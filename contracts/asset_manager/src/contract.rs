@@ -5,13 +5,12 @@ mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
 }
 use crate::errors::ContractError;
+use crate::storage_types::TokenData;
 use crate::{
     config::{get_config, set_config, ConfigData},
     states::{
-        extent_ttl, has_registry, read_administrator, read_token_last_current_limit,
-        read_token_last_update, read_token_percentage, read_token_period, read_tokens,
-        write_administrator, write_registry, write_token_current_limit, write_token_last_update,
-        write_token_percentage, write_token_period, write_tokens,
+        extent_ttl, has_registry, read_administrator, read_token_data, read_tokens,
+        write_administrator, write_registry, write_token_data, write_tokens,
     },
     storage_types::{DataKey, POINTS},
     xcall_manager_interface::XcallManagerClient,
@@ -67,8 +66,8 @@ impl AssetManager {
     pub fn configure_rate_limit(
         env: Env,
         token_address: Address,
-        period: u128,
-        percentage: u128,
+        period: u64,
+        percentage: u32,
     ) -> Result<(), ContractError> {
         let admin = read_administrator(&env);
         admin.require_auth();
@@ -79,37 +78,28 @@ impl AssetManager {
             write_tokens(&env, token_address.clone());
         }
 
-        if percentage > POINTS {
+        if percentage > POINTS as u32 {
             return Err(ContractError::PercentageShouldBeLessThanOrEqualToPOINTS);
         }
-        let token_client = token::Client::new(&env, &token_address);
-        let contract_token_balance = token_client.balance(&env.current_contract_address());
 
-        write_token_period(&env, &token_address, period);
-        write_token_percentage(&env, &token_address, percentage);
-        write_token_last_update(&env, &token_address, env.ledger().timestamp());
-        write_token_current_limit(
-            &env,
-            &token_address,
-            (contract_token_balance as u128) * percentage / POINTS,
-        );
+        write_token_data(&env, token_address, TokenData{period, percentage, last_update: env.ledger().timestamp(), current_limit: 0});
         Ok(())
     }
 
-    pub fn get_rate_limit(env: Env, token_address: Address) -> (u128, u128, u64, u128) {
+    pub fn get_rate_limit(env: Env, token_address: Address) -> (u64, u32, u64, u64) {
+        let data: TokenData = read_token_data(&env, token_address).unwrap();
         (
-            read_token_period(&env, &token_address),
-            read_token_percentage(&env, &token_address),
-            read_token_last_update(&env, &token_address),
-            read_token_last_current_limit(&env, &token_address),
+            data.period,
+            data.percentage,
+            data.last_update,
+            data.current_limit
         )
     }
 
     pub fn reset_limit(env: Env, token: Address) {
         let balance = Self::get_token_balance(&env, token.clone());
-        let percentage: u128 = read_token_percentage(&env, &token);
-
-        write_token_current_limit(&env, &token, balance * percentage / POINTS);
+        let mut data: TokenData = read_token_data(&env, token).unwrap();
+        data.current_limit = (balance * data.percentage as u128 / POINTS) as u64;
     }
 
     pub fn get_withdraw_limit(env: Env, token: Address) -> Result<u128, ContractError> {
@@ -128,9 +118,9 @@ impl AssetManager {
         if balance - amount < limit {
             panic_with_error!(&env, ContractError::ExceedsWithdrawLimit);
         };
-
-        write_token_current_limit(&env, &token.clone(), limit);
-        write_token_last_update(&env, &token.clone(), env.ledger().timestamp());
+        let mut data: TokenData = read_token_data(&env, token).unwrap();
+        data.current_limit = limit as u64;
+        data.last_update = env.ledger().timestamp();
         Ok(true)
     }
 
@@ -139,8 +129,9 @@ impl AssetManager {
         balance: u128,
         token: Address,
     ) -> Result<u128, ContractError> {
-        let period: u128 = read_token_period(env, &token.clone());
-        let percentage: u128 = read_token_percentage(env, &token.clone());
+        let data: TokenData = read_token_data(&env, token).unwrap();
+        let period: u128 = data.period as u128;
+        let percentage: u128 = data.percentage as u128;
         if period == 0 {
             return Ok(0);
         }
@@ -148,11 +139,11 @@ impl AssetManager {
         let min_reserve = (balance * percentage) / POINTS;
 
         let max_withdraw = balance - min_reserve;
-        let last_update: u64 = read_token_last_update(&env, &token.clone());
+        let last_update: u64 = data.last_update;
         let time_diff = (&env.ledger().timestamp() - last_update) / 1000;
 
         let allowed_withdrawal = (max_withdraw * time_diff as u128) / period;
-        let mut reserve: u128 = read_token_last_current_limit(&env, &token.clone());
+        let mut reserve: u128 = data.current_limit as u128;
 
         if reserve > allowed_withdrawal {
             reserve = reserve - allowed_withdrawal;

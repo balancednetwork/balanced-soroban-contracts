@@ -53,8 +53,8 @@ fn test_configure_rate_limit_panic() {
     let ctx = TestContext::default();
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
     ctx.init_context(&client);
-    let period = &300u128;
-    let percentage = &10001u128;
+    let period = &300;
+    let percentage = &10001;
     client.configure_rate_limit(&ctx.token, period, percentage);
 
     let limit = client.get_withdraw_limit(&ctx.token);
@@ -67,8 +67,8 @@ fn test_configure_rate_limit() {
     let ctx = TestContext::default();
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
     ctx.init_context(&client);
-    let period = &300u128;
-    let percentage = &300u128;
+    let period = &300;
+    let percentage = &300;
     client.configure_rate_limit(&ctx.token, period, percentage);
     assert_eq!(
         ctx.env.auths(),
@@ -78,7 +78,7 @@ fn test_configure_rate_limit() {
                 function: AuthorizedFunction::Contract((
                     ctx.registry.clone(),
                     Symbol::new(&ctx.env, "configure_rate_limit"),
-                    (&ctx.token, 300u128, 300u128).into_val(&ctx.env)
+                    (&ctx.token, 300u64, 300u32).into_val(&ctx.env)
                 )),
                 sub_invocations: std::vec![]
             }
@@ -95,7 +95,7 @@ fn test_deposit_without_to_and_data() {
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
     ctx.init_context(&client);
 
-    client.configure_rate_limit(&ctx.token, &300u128, &300u128);
+    client.configure_rate_limit(&ctx.token, &300, &300);
     let token_client = token::Client::new(&ctx.env, &ctx.token);
     let stellar_asset_client: token::StellarAssetClient =
         token::StellarAssetClient::new(&ctx.env, &ctx.token);
@@ -130,8 +130,8 @@ fn test_veryfy_rate_limit() {
     let ctx = TestContext::default();
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
     ctx.init_context(&client);
-    let period = &300u128;
-    let percentage = &300u128;
+    let period = &300;
+    let percentage = &300;
     client.configure_rate_limit(&ctx.token, period, percentage);
 
     //let token_client = token::Client::new(&ctx.env, &ctx.token);
@@ -167,8 +167,8 @@ fn test_veryfy_rate_limit_panic_exceeds_withdraw_limit() {
     let ctx = TestContext::default();
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
     ctx.init_context(&client);
-    let period = &300u128;
-    let percentage = &300u128;
+    let period = &300;
+    let percentage = &300;
     client.configure_rate_limit(&ctx.token, period, percentage);
 
     let token_client = token::Client::new(&ctx.env, &ctx.token);
@@ -209,7 +209,7 @@ fn test_deposit_with_to_and_without_data() {
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
     ctx.init_context(&client);
 
-    client.configure_rate_limit(&ctx.token, &300u128, &300u128);
+    client.configure_rate_limit(&ctx.token, &300, &300);
     let token_client = token::Client::new(&ctx.env, &ctx.token);
     let stellar_asset_client: token::StellarAssetClient =
         token::StellarAssetClient::new(&ctx.env, &ctx.token);
@@ -245,7 +245,7 @@ fn test_deposit_with_to_and_data() {
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
     ctx.init_context(&client);
 
-    client.configure_rate_limit(&ctx.token, &300u128, &300u128);
+    client.configure_rate_limit(&ctx.token, &300, &300);
     let token_client = token::Client::new(&ctx.env, &ctx.token);
     let stellar_asset_client: token::StellarAssetClient =
         token::StellarAssetClient::new(&ctx.env, &ctx.token);
@@ -287,7 +287,7 @@ fn test_handle_call_message_for_withdraw_to() {
     ctx.env.mock_all_auths();
 
     ctx.init_context(&client);
-    client.configure_rate_limit(&ctx.token, &300u128, &300u128);
+    client.configure_rate_limit(&ctx.token, &300, &300);
 
     let bnusd_amount = 100000u128;
     let token_client = token::Client::new(&ctx.env, &ctx.token);
@@ -320,7 +320,7 @@ fn test_handle_call_message_for_withdraw_to_invalid_address() {
     ctx.env.mock_all_auths();
 
     ctx.init_context(&client);
-    client.configure_rate_limit(&ctx.token, &300u128, &300u128);
+    client.configure_rate_limit(&ctx.token, &300, &300);
 
     let bnusd_amount = 100000u128;
     let token_client = token::Client::new(&ctx.env, &ctx.token);
@@ -353,7 +353,7 @@ fn test_handle_call_message_for_withdraw_to_panic_with_protocal_mismatch() {
     ctx.env.mock_all_auths();
 
     ctx.init_context(&client);
-    client.configure_rate_limit(&ctx.token, &300u128, &300u128);
+    client.configure_rate_limit(&ctx.token, &300, &300);
 
     let bnusd_amount = 100000u128;
     let token_client = token::Client::new(&ctx.env, &ctx.token);
@@ -386,7 +386,7 @@ fn test_handle_call_message_for_withdraw_to_panic_with_not_icon_asset_manager() 
     ctx.env.mock_all_auths();
 
     ctx.init_context(&client);
-    client.configure_rate_limit(&ctx.token, &300u128, &300u128);
+    client.configure_rate_limit(&ctx.token, &300, &300);
 
     let bnusd_amount = 100000u128;
     let token_client = token::Client::new(&ctx.env, &ctx.token);
@@ -419,7 +419,7 @@ fn test_handle_call_message_for_withdraw_to_panic_with_unknown_message_type() {
     ctx.env.mock_all_auths();
 
     ctx.init_context(&client);
-    client.configure_rate_limit(&ctx.token, &300u128, &300u128);
+    client.configure_rate_limit(&ctx.token, &300, &300);
 
     let bnusd_amount = 100000u128;
     let token_client = token::Client::new(&ctx.env, &ctx.token);
@@ -480,7 +480,7 @@ fn test_handle_call_message_for_deposit_rollback_panic_with_only_call_service() 
     ctx.env.mock_all_auths();
 
     ctx.init_context(&client);
-    client.configure_rate_limit(&ctx.token, &300u128, &300u128);
+    client.configure_rate_limit(&ctx.token, &300, &300);
 
     let bnusd_amount = 100000u128;
     let token_client = token::Client::new(&ctx.env, &ctx.token);
@@ -520,7 +520,7 @@ fn test_extend_ttl() {
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
     ctx.init_context(&client);
 
-    client.configure_rate_limit(&ctx.token, &300u128, &300u128);
+    client.configure_rate_limit(&ctx.token, &300, &300);
 
     client.extend_ttl();
 }

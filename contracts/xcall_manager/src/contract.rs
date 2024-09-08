@@ -88,7 +88,7 @@ impl XcallManager {
     }
 
     pub fn get_protocols(e: Env) -> Result<(Vec<String>, Vec<String>), ContractError> {
-        let sources = read_sources(&e);
+        let sources: Vec<String> = read_sources(&e);
         let destinations = read_destinations(&e);
         Ok((sources, destinations))
     }
@@ -147,7 +147,7 @@ impl XcallManager {
         let sources = read_sources(&e);
         if !Self::verify_protocols_unordered(protocols.clone(), sources).unwrap() {
             if method != String::from_str(&e.clone(), CONFIGURE_PROTOCOLS_NAME) {
-                return Err(ContractError::ProtocolMismatch);
+                return Err(ContractError::UnknownMessageType);
             }
             Self::verify_protocol_recovery(&e, protocols)?;
         }
