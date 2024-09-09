@@ -33,7 +33,6 @@ pub fn _cross_transfer(
 ) -> Result<(), ContractError> {
     _burn(&e, from.clone(), amount as i128);
     let xcall_message = CrossTransfer::new(from.clone().to_string(), to, amount, data);
-
     let rollback = CrossTransferRevert::new(from.clone(), amount);
     let config = get_config(&e);
     let icon_bn_usd = config.icon_bn_usd;

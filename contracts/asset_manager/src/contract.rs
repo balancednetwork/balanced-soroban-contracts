@@ -98,8 +98,9 @@ impl AssetManager {
 
     pub fn reset_limit(env: Env, token: Address) {
         let balance = Self::get_token_balance(&env, token.clone());
-        let mut data: TokenData = read_token_data(&env, token).unwrap();
+        let mut data: TokenData = read_token_data(&env, token.clone()).unwrap();
         data.current_limit = (balance * data.percentage as u128 / POINTS) as u64;
+        write_token_data(&env, token, data);
     }
 
     pub fn get_withdraw_limit(env: Env, token: Address) -> Result<u128, ContractError> {
@@ -118,9 +119,10 @@ impl AssetManager {
         if balance - amount < limit {
             panic_with_error!(&env, ContractError::ExceedsWithdrawLimit);
         };
-        let mut data: TokenData = read_token_data(&env, token).unwrap();
+        let mut data: TokenData = read_token_data(&env, token.clone()).unwrap();
         data.current_limit = limit as u64;
         data.last_update = env.ledger().timestamp();
+        write_token_data(&env, token, data);
         Ok(true)
     }
 
@@ -249,20 +251,19 @@ impl AssetManager {
         xcall.require_auth();
 
         let method = Deposit::get_method(&e, data.clone());
+        
         let icon_asset_manager = config.icon_asset_manager;
         let current_contract = e.current_contract_address();
         if method == String::from_str(&e, &WITHDRAW_TO_NAME) {
             if from != icon_asset_manager {
                 return Err(ContractError::OnlyICONAssetManager);
             }
-
             let message = WithdrawTo::decode(&e, data);
             if !is_valid_string_address(&message.to)
                 || !is_valid_string_address(&message.token_address)
             {
                 return Err(ContractError::InvalidAddress);
             }
-
             Self::withdraw(
                 &e,
                 current_contract,
