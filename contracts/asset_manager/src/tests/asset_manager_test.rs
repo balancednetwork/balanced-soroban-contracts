@@ -1,10 +1,9 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::contract::AssetManagerClient;
+use crate::{contract::AssetManagerClient, storage_types::DataKey};
 use soroban_sdk::{
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
-    token, Address, Bytes, IntoVal, String, Symbol, Vec,
+    testutils::{storage::Persistent, Address as _, AuthorizedFunction, AuthorizedInvocation}, token, Address, Bytes, IntoVal, String, Symbol, Vec
 };
 
 use soroban_rlp::balanced::messages::{deposit_revert::DepositRevert, withdraw_to::WithdrawTo};
@@ -523,6 +522,14 @@ fn test_extend_ttl() {
     ctx.init_context(&client);
 
     client.configure_rate_limit(&ctx.token, &300, &300);
-
+    let token = ctx.token;
+    
     client.extend_ttl();
+
+    ctx.env.as_contract(&client.address, || {
+        let key = DataKey::TokenData(token.clone());
+        let before_ttl = ctx.env.storage().persistent().get_ttl(&key);
+        std::println!("before ttl is: {:?}", before_ttl);
+    });
+
 }

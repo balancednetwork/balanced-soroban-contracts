@@ -48,7 +48,7 @@ pub fn read_token_data(env: &Env, token_address: Address) -> Option<TokenData> {
 
 pub fn write_tokens(e: &Env, token: Address) {
     let key = DataKey::Tokens;
-    let mut tokens: Vec<Address> = match e.storage().instance().get(&key) {
+    let mut tokens: Vec<Address> = match e.storage().persistent().get(&key) {
         Some(names) => names,
         None => Vec::new(&e),
     };
@@ -72,7 +72,7 @@ pub fn extent_ttl(e: &Env) {
         .instance()
         .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-    let tokens = read_tokens(&e.clone());
+    let tokens = read_tokens(&e);
     e.storage().persistent().extend_ttl(
         &DataKey::Tokens,
         INSTANCE_LIFETIME_THRESHOLD,
