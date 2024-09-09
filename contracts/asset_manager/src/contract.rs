@@ -1,5 +1,5 @@
 use soroban_sdk::{
-    contract, contractimpl, panic_with_error, token, Address, Bytes, BytesN, Env, String, Vec,
+    contract, contractimpl, panic_with_error, token, Address, Bytes, BytesN, Env, String, Vec
 };
 mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
@@ -108,6 +108,7 @@ impl AssetManager {
         return Ok(Self::calculate_limit(&env, balance, token)?);
     }
 
+    
     fn get_token_balance(env: &Env, token: Address) -> u128 {
         let token_client = token::Client::new(env, &token);
         return token_client.balance(&env.current_contract_address()) as u128;
