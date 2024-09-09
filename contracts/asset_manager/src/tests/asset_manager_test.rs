@@ -84,6 +84,8 @@ fn test_configure_rate_limit() {
             }
         )]
     );
+    let token_data = client.get_rate_limit(&ctx.token);
+    assert_eq!(token_data.3, 0);
     let limit = client.get_withdraw_limit(&ctx.token);
     let verified = client.verify_withdraw(&ctx.token, &limit);
     assert_eq!(verified, true);
