@@ -40,7 +40,7 @@ impl TestContext {
     pub fn default() -> Self {
         let env = Env::default();
         let token_admin = Address::generate(&env);
-        let token = env.register_stellar_asset_contract(token_admin.clone());
+        let token = env.register_stellar_asset_contract_v2(token_admin.clone());
         let xcall_manager = env.register_contract(None, XcallManager);
         let centralized_connection = env.register_contract_wasm(None, connection::WASM);
         let xcall = env.register_contract_wasm(None, xcall::WASM);
@@ -52,13 +52,13 @@ impl TestContext {
             registry: xcall_manager,
             admin: Address::generate(&env),
             depositor: Address::generate(&env),
-            xcall: xcall, 
+            xcall, 
             icon_governance: String::from_str(&env, "icon01/kjdnoi"),
             xcall_network_address: String::from_str(&env, "stellar/address"),
-            token: token,
-            centralized_connection: centralized_connection,
+            token: token.address(),
+            centralized_connection,
             nid: String::from_str(&env, "stellar"),
-            native_token: env.register_stellar_asset_contract(token_admin.clone()),
+            native_token: env.register_stellar_asset_contract_v2(token_admin.clone()).address(),
             env
         }
     }

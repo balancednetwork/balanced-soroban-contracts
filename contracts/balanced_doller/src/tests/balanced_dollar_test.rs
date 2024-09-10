@@ -75,11 +75,11 @@ fn test_cross_transfer_with_to_and_data() {
         0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E,
         0x1F, 0x20,
     ];
-    client.cross_transfer_data(
+    client.cross_transfer(
         &ctx.depositor,
         &amount,
         &String::from_str(&ctx.env, "icon01/hxjkdvhui"),
-        &Bytes::from_array(&ctx.env, &data),
+        &Option::Some(Bytes::from_array(&ctx.env, &data)),
     );
     std::println!("call");
     assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 400u128) // why 300?
