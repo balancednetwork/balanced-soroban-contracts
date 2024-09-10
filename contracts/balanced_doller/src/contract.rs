@@ -73,20 +73,11 @@ impl BalancedDollar {
         from: Address,
         amount: u128,
         to: String,
+        data: Option<Bytes>
     ) -> Result<(), ContractError> {
         from.require_auth();
-        return balanced_dollar::_cross_transfer(e.clone(), from, amount, to, Bytes::new(&e));
-    }
-
-    pub fn cross_transfer_data(
-        e: Env,
-        from: Address,
-        amount: u128,
-        to: String,
-        data: Bytes,
-    ) -> Result<(), ContractError> {
-        from.require_auth();
-        return balanced_dollar::_cross_transfer(e, from, amount, to, data);
+        let transfer_data = data.unwrap_or(Bytes::from_array(&e, &[0u8; 32]));
+        return balanced_dollar::_cross_transfer(e.clone(), from, amount, to, transfer_data);
     }
 
     pub fn handle_call_message(
