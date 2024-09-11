@@ -74,15 +74,17 @@ impl TestContext {
 
     pub fn init_context(&self, client: &BalancedDollarClient<'static>) {
         self.env.mock_all_auths();
+        self.init_xcall_manager_context();
+        self.init_xcall_state();
         let config = ConfigData {
             xcall: self.xcall.clone(),
             xcall_manager: self.xcall_manager.clone(),
             nid: self.nid.clone(),
             icon_bn_usd: self.icon_bn_usd.clone(),
+            xcall_network_address: self.xcall_client.get_network_address()
         };
         client.initialize(&self.admin, &config);
-        self.init_xcall_manager_context();
-        self.init_xcall_state();
+        
     }
 
     pub fn init_xcall_manager_context(&self) {

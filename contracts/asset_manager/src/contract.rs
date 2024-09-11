@@ -15,12 +15,12 @@ use crate::{
     storage_types::{DataKey, POINTS},
     xcall_manager_interface::XcallManagerClient,
 };
-use soroban_rlp::balanced::address_utils::{get_address_from, is_valid_string_address};
+use soroban_rlp::balanced::address_utils::is_valid_string_address;
 use soroban_rlp::balanced::messages::{
     deposit::Deposit, deposit_revert::DepositRevert, withdraw_to::WithdrawTo,
 };
 
-use xcall::{AnyMessage, CallMessageWithRollback, Client, Envelope, NetworkAddress};
+use xcall::{AnyMessage, CallMessageWithRollback, Client, Envelope};
 
 const DEPOSIT_NAME: &str = "Deposit";
 const WITHDRAW_TO_NAME: &str = "WithdrawTo";
@@ -35,7 +35,6 @@ impl AssetManager {
         if has_registry(&env.clone()) {
             panic_with_error!(&env, ContractError::ContractAlreadyInitialized)
         }
-
         write_registry(&env, &registry);
         write_administrator(&env, &admin);
         Self::configure(env, config);
@@ -273,8 +272,7 @@ impl AssetManager {
                 message.amount,
             )?;
         } else if method == String::from_str(&e, &DEPOSIT_REVERT_NAME) {
-            let xcall_network_address = Self::xcall_client(&e, &xcall).get_network_address();
-            if xcall_network_address != from {
+            if config.xcall_network_address != from {
                 return Err(ContractError::OnlyCallService);
             }
             let message: DepositRevert = DepositRevert::decode(&e.clone(), data);
