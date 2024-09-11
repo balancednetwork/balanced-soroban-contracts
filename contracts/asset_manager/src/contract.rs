@@ -20,7 +20,7 @@ use soroban_rlp::balanced::messages::{
     deposit::Deposit, deposit_revert::DepositRevert, withdraw_to::WithdrawTo,
 };
 
-use xcall::{AnyMessage, CallMessageWithRollback, Client, Envelope};
+use xcall::{AnyMessage, CallMessageWithRollback, Client, Envelope, NetworkAddress};
 
 const DEPOSIT_NAME: &str = "Deposit";
 const WITHDRAW_TO_NAME: &str = "WithdrawTo";
@@ -273,9 +273,8 @@ impl AssetManager {
                 message.amount,
             )?;
         } else if method == String::from_str(&e, &DEPOSIT_REVERT_NAME) {
-            let from_xcall = get_address_from(&from, &e);
-            let xcall_address = Address::from_string(&from_xcall.into());
-            if xcall != xcall_address {
+            let xcall_network_address = Self::xcall_client(&e, &xcall).get_network_address();
+            if xcall_network_address != from {
                 return Err(ContractError::OnlyCallService);
             }
             let message: DepositRevert = DepositRevert::decode(&e.clone(), data);

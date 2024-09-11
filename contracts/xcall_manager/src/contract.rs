@@ -101,14 +101,14 @@ impl XcallManager {
         if array1.len() != array2.len() {
             return Ok(false);
         }
-        for p in array1.iter() {
+        for p in array2.iter() {
             let mut j = 0;
-            for s in array2.iter() {
+            for s in array1.iter() {
                 j = j + 1;
                 if p.eq(&s) {
                     break;
                 } else {
-                    if j == array2.len() {
+                    if j == array1.len() {
                         return Ok(false);
                     }
                     continue;
