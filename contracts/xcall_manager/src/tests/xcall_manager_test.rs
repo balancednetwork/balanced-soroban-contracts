@@ -163,6 +163,77 @@ fn test_handle_call_message_for_configure_protocols() {
     let (s, d) = client.get_protocols();
     assert_eq!(s, sources);
     assert_eq!(d, destinations);
+
+    //verify multiple protocols
+    let wrong_sources = [
+        String::from_str(&ctx.env, "stellar/address"),
+        String::from_str(&ctx.env, "stellar/address"),
+    ];
+    let verifiy_false = client.verify_protocols(&Vec::from_array(&ctx.env, wrong_sources));
+    assert_eq!(verifiy_false, false);
+
+    let wrong_sources_second = [
+        String::from_str(&ctx.env, "stellar/address1"),
+        String::from_str(&ctx.env, "stellar/address1"),
+    ];
+    let verifiy_false_second = client.verify_protocols(&Vec::from_array(&ctx.env, wrong_sources_second));
+    assert_eq!(verifiy_false_second, false);
+
+    let correct_sources = [
+        String::from_str(&ctx.env, "stellar/address"),
+        String::from_str(&ctx.env, "stellar/address1"),
+    ];
+    let verifiy_true = client.verify_protocols(&Vec::from_array(&ctx.env, correct_sources));
+    assert_eq!(verifiy_true, true);
+
+    let correct_sources_second: [String; 2] = [
+        String::from_str(&ctx.env, "stellar/address1"),
+        String::from_str(&ctx.env, "stellar/address"),
+    ];
+    let verifiy_true = client.verify_protocols(&Vec::from_array(&ctx.env, correct_sources_second));
+    assert_eq!(verifiy_true, true);
+
+    //verify protocol recovery
+    client.propose_removal(&String::from_str(&ctx.env, "stellar/address1"));
+    let with_protocol_remove: [String; 1] = [
+        String::from_str(&ctx.env, "stellar/address"),
+    ];
+    client.verify_protocol_recovery(&Vec::from_array(&ctx.env, with_protocol_remove));
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #12)")]
+fn test_verify_protocol_recovery_without_removing_protocol() {
+    let ctx = TestContext::default();
+    let client = XcallManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.env.mock_all_auths();
+    ctx.init_context(&client);
+
+    let source_items = [
+        String::from_str(&ctx.env, "stellar/address"),
+        String::from_str(&ctx.env, "stellar/address1"),
+    ];
+    let destination_items = [
+        String::from_str(&ctx.env, "icon/address"),
+        String::from_str(&ctx.env, "icon/address1"),
+    ];
+    let sources = Vec::from_array(&ctx.env, source_items);
+    let destinations = Vec::from_array(&ctx.env, destination_items);
+    let data = ConfigureProtocols::new(sources.clone(), destinations.clone())
+        .encode(&ctx.env, String::from_str(&ctx.env, "ConfigureProtocols"));
+    let decoded: ConfigureProtocols = ConfigureProtocols::decode(&ctx.env, data.clone());
+    client.white_list_actions(&data);
+    assert_eq!(decoded.sources, sources);
+    assert_eq!(decoded.destinations, destinations);
+    let (s, _) = client.get_protocols();
+    client.handle_call_message( &ctx.icon_governance, &data, &s);
+
+    //verify protocol recovery
+    let without_protocol_remove: [String; 2] = [
+        String::from_str(&ctx.env, "stellar/address1"),
+        String::from_str(&ctx.env, "stellar/address"),
+    ];
+    client.verify_protocol_recovery(&Vec::from_array(&ctx.env, without_protocol_remove));
 }
 
 #[test]
