@@ -71,15 +71,17 @@ impl TestContext {
 
     pub fn init_context(&self, client: &AssetManagerClient<'static>) {
         self.env.mock_all_auths();
+        self.init_xcall_manager_context();
+        self.init_xcall_state();
         let config = ConfigData {
             xcall: self.xcall.clone(),
             xcall_manager: self.xcall_manager.clone(),
             native_address: self.native_token.clone(),
             icon_asset_manager: self.icon_asset_manager.clone(),
+            xcall_network_address: self.xcall_client.get_network_address()
         };
         client.initialize(&self.registry, &self.admin, &config);
-        self.init_xcall_manager_context();
-        self.init_xcall_state();
+        
     }
 
     pub fn init_xcall_manager_context(&self) {

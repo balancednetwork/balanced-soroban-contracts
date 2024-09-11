@@ -9,7 +9,7 @@ pub enum DataKey {
     Admin,
     Config,
     Tokens,
-    TokenData(Address),
+    TokenData(Address)
 }
 
 #[derive(Clone)]
