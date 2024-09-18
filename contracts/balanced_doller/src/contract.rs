@@ -49,13 +49,6 @@ impl BalancedDollar {
         balanced_dollar::configure(e, config);
     }
 
-    pub fn mint(e: Env, to: Address, amount: i128) {
-        let admin = read_administrator(&e);
-        admin.require_auth();
-
-        balanced_dollar::_mint(&e, to, amount)
-    }
-
     pub fn set_admin(e: Env, new_admin: Address) {
         let admin = read_administrator(&e);
         admin.require_auth();
