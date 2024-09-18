@@ -8,9 +8,7 @@ use soroban_rlp::balanced::messages::{
     cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert,
 };
 use soroban_sdk::{
-    symbol_short,
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
-    Address, Bytes, IntoVal, String, Vec,
+    symbol_short, testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation}, xdr::ToXdr, Address, Bytes, BytesN, FromVal, IntoVal, String, Vec
 };
 
 #[test]
@@ -57,15 +55,39 @@ fn test_cross_transfer_with_to_and_data() {
 
     let amount_i128: i128 = 100000i128;
     let amount = &(amount_i128 as u128);
-    let mint_amount = &(amount_i128 + amount_i128);
 
-    client.mint(&ctx.depositor, mint_amount);
+    let bnusd_amount = 1000000u128;
 
-    ctx.mint_native_token(&ctx.depositor, 500u128);
-    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 500u128);
+    let items: [u8; 32] = [0; 32];
+    let to = String::from_str(
+        &ctx.env,
+        "stellar/CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33",
+    );
+    let from_address = &Address::from_string(&String::from_str(
+        &ctx.env,
+        "CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33",
+    ));
+    
+    std::println!("to address is: {:?}", to);
+    let data = CrossTransfer::new(
+        ctx.depositor.to_string(),
+        to.clone(),
+        bnusd_amount,
+        Bytes::from_array(&ctx.env, &items),
+    )
+    .encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
+    
+
+    let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
+    client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
+    
+
+
+    ctx.mint_native_token(&from_address, 500u128);
+    assert_eq!(ctx.get_native_token_balance(&from_address), 500u128);
 
     client.approve(
-        &ctx.depositor,
+        &from_address,
         &ctx.registry,
         &(amount_i128 + amount_i128),
         &1312000,
@@ -76,14 +98,15 @@ fn test_cross_transfer_with_to_and_data() {
         0x1F, 0x20,
     ];
     client.cross_transfer(
-        &ctx.depositor,
+        &from_address,
         &amount,
         &String::from_str(&ctx.env, "icon01/hxjkdvhui"),
         &Option::Some(Bytes::from_array(&ctx.env, &data)),
     );
-    std::println!("call");
-    assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 400u128) // why 300?
+    assert_eq!(ctx.get_native_token_balance(&from_address), 400u128) // why 300?
 }
+
+
 
 #[test]
 fn test_handle_call_message_for_cross_transfer() {

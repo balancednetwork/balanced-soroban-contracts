@@ -135,7 +135,7 @@ pub fn get_address(network_address: String, env: &Env) -> Result<Address, Contra
     Ok(Address::from_string_bytes(&account))
 }
 
-pub fn _mint(e: &Env, to: Address, amount: i128) {
+fn _mint(e: &Env, to: Address, amount: i128) {
     contract::check_nonnegative_amount(amount);
     let admin: Address = read_administrator(&e);
 
