@@ -288,7 +288,7 @@ fn test_handle_call_message_for_withdraw_to() {
     ctx.env.mock_all_auths();
 
     ctx.init_context(&client);
-    client.configure_rate_limit(&ctx.token, &300, &300);
+    //client.configure_rate_limit(&ctx.token, &300, &300);
 
     let bnusd_amount = 100000u128;
     let token_client = token::Client::new(&ctx.env, &ctx.token);

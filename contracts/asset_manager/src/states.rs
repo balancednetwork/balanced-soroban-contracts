@@ -41,9 +41,10 @@ pub fn write_token_data(env: &Env, token_address: Address, data: TokenData) {
     env.storage().persistent().set(&key, &data);
 }
 
-pub fn read_token_data(env: &Env, token_address: Address) -> Option<TokenData> {
+pub fn read_token_data(env: &Env, token_address: Address) -> TokenData {
+    let default = TokenData{percentage: 0, period: 0, last_update: 0, current_limit: 0 };
     let key = DataKey::TokenData(token_address);
-    env.storage().persistent().get(&key)
+    env.storage().persistent().get(&key).unwrap_or(default)
 }
 
 pub fn write_tokens(e: &Env, token: Address) {
