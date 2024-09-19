@@ -8,7 +8,8 @@ pub struct ConfigData {
     pub xcall_manager: Address,
     pub nid: String,
     pub icon_bn_usd: String,
-    pub xcall_network_address: String
+    pub xcall_network_address: String,
+    pub upgrade_authority: Address,
 }
 
 pub fn set_config(e: &Env, config: ConfigData) {

@@ -1,14 +1,19 @@
-use soroban_sdk::{contract, contractimpl, panic_with_error, Address, Bytes, BytesN, Env, String, Vec};
+use soroban_sdk::{
+    contract, contractimpl, panic_with_error, Address, Bytes, BytesN, Env, String, Vec,
+};
 mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
 }
+
 use crate::{
-    config::{get_config, set_config, ConfigData},
+    config::{self, get_config, set_config, ConfigData},
     states::{
         extend_ttl, has_proposed_removed, has_registry, read_administrator, read_destinations,
         read_proposed_removed, read_sources, write_administrator, write_destinations,
         write_proposed_removed, write_registry, write_sources,
-    }, storage_types::DataKey, white_list_actions::WhiteListActions
+    },
+    storage_types::DataKey,
+    white_list_actions::WhiteListActions,
 };
 use soroban_rlp::balanced::messages::configure_protocols::ConfigureProtocols;
 
@@ -37,7 +42,6 @@ impl XcallManager {
         set_config(&env, config);
         write_sources(&env, &sources);
         write_destinations(&env, &destinations);
-
     }
 
     pub fn get_config(env: Env) -> ConfigData {
@@ -73,7 +77,7 @@ impl XcallManager {
 
     pub fn remove_action(e: Env, action: Bytes) -> Result<bool, ContractError> {
         let actions = WhiteListActions::new(DataKey::WhiteListedActions);
-        if !actions.contains(&e, action.clone()){
+        if !actions.contains(&e, action.clone()) {
             return Err(ContractError::NotWhiteListed);
         }
         actions.remove(&e, action);
@@ -133,7 +137,7 @@ impl XcallManager {
         }
 
         let actions = WhiteListActions::new(DataKey::WhiteListedActions);
-        if !actions.contains(&e, data.clone()){
+        if !actions.contains(&e, data.clone()) {
             return Err(ContractError::NotWhiteListed);
         }
         actions.remove(&e, data.clone());
@@ -191,9 +195,18 @@ impl XcallManager {
         return Ok(new_array);
     }
 
+    pub fn set_upgrade_authority(e: Env, upgrade_authority: Address) {
+        let mut config = config::get_config(&e);
+
+        config.upgrade_authority.require_auth();
+
+        config.upgrade_authority = upgrade_authority;
+        config::set_config(&e, config);
+    }
+
     pub fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
-        let admin: Address = e.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
+        let config = get_config(&e);
+        config.upgrade_authority.require_auth();
 
         e.deployer().update_current_contract_wasm(new_wasm_hash);
     }
@@ -201,5 +214,4 @@ impl XcallManager {
     pub fn extend_ttl(e: Env) {
         extend_ttl(&e);
     }
-    
 }

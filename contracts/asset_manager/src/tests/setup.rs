@@ -30,6 +30,7 @@ pub struct TestContext {
     pub admin: Address,
     pub depositor: Address,
     pub withdrawer: Address,
+    pub upgrade_authority: Address,
     pub xcall: Address,
     pub xcall_manager: Address,
     pub icon_asset_manager: String,
@@ -56,6 +57,7 @@ impl TestContext {
             admin: Address::generate(&env),
             depositor: Address::generate(&env),
             withdrawer: Address::generate(&env),
+            upgrade_authority: Address::generate(&env),
             xcall: xcall.clone(),
             xcall_manager: xcall_manager,
             icon_asset_manager: String::from_str(&env, "icon01/hxjnfh4u"),
@@ -63,7 +65,9 @@ impl TestContext {
             token: token.address(),
             centralized_connection: centralized_connection,
             nid: String::from_str(&env, "stellar"),
-            native_token: env.register_stellar_asset_contract_v2(token_admin.clone()).address(),
+            native_token: env
+                .register_stellar_asset_contract_v2(token_admin.clone())
+                .address(),
             xcall_client: xcall::Client::new(&env, &xcall),
             env,
         }
@@ -78,10 +82,10 @@ impl TestContext {
             xcall_manager: self.xcall_manager.clone(),
             native_address: self.native_token.clone(),
             icon_asset_manager: self.icon_asset_manager.clone(),
-            xcall_network_address: self.xcall_client.get_network_address()
+            xcall_network_address: self.xcall_client.get_network_address(),
+            upgrade_authority: self.upgrade_authority.clone(),
         };
         client.initialize(&self.registry, &self.admin, &config);
-        
     }
 
     pub fn init_xcall_manager_context(&self) {

@@ -1,9 +1,10 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::{contract::AssetManagerClient, storage_types::DataKey};
+use crate::{config, contract::AssetManagerClient, storage_types::DataKey};
 use soroban_sdk::{
-    testutils::{storage::Persistent, Address as _, AuthorizedFunction, AuthorizedInvocation}, token, Address, Bytes, IntoVal, String, Symbol, Vec
+    testutils::{storage::Persistent, Address as _, AuthorizedFunction, AuthorizedInvocation},
+    token, Address, Bytes, IntoVal, String, Symbol, Vec,
 };
 
 use soroban_rlp::balanced::messages::{deposit_revert::DepositRevert, withdraw_to::WithdrawTo};
@@ -523,7 +524,7 @@ fn test_extend_ttl() {
 
     client.configure_rate_limit(&ctx.token, &300, &300);
     let token = ctx.token;
-    
+
     client.extend_ttl();
 
     ctx.env.as_contract(&client.address, || {
@@ -531,5 +532,34 @@ fn test_extend_ttl() {
         let before_ttl = ctx.env.storage().persistent().get_ttl(&key);
         std::println!("before ttl is: {:?}", before_ttl);
     });
+}
 
+#[test]
+fn test_set_upgrade_authority() {
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.init_context(&client);
+
+    let new_upgrade_authority = Address::generate(&ctx.env);
+    client.set_upgrade_authority(&new_upgrade_authority);
+
+    assert_eq!(
+        ctx.env.auths(),
+        std::vec![(
+            ctx.upgrade_authority.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    ctx.registry.clone(),
+                    Symbol::new(&ctx.env, "set_upgrade_authority"),
+                    (&new_upgrade_authority,).into_val(&ctx.env)
+                )),
+                sub_invocations: std::vec![]
+            }
+        )]
+    );
+
+    ctx.env.as_contract(&client.address, || {
+        let config = config::get_config(&ctx.env);
+        assert_eq!(config.upgrade_authority, new_upgrade_authority)
+    });
 }

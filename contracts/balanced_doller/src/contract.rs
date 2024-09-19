@@ -3,12 +3,14 @@
 use crate::allowance::{read_allowance, spend_allowance, write_allowance};
 use crate::balance::{read_balance, receive_balance, spend_balance};
 use crate::balanced_dollar;
-use crate::config::ConfigData;
+use crate::config::{self, ConfigData};
 use crate::errors::ContractError;
 use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
 use crate::states::{has_administrator, read_administrator, write_administrator};
-use crate::storage_types::{DataKey, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
-use soroban_sdk::{contract, contractimpl, panic_with_error, Address, Bytes, BytesN, Env, String, Vec};
+use crate::storage_types::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+use soroban_sdk::{
+    contract, contractimpl, panic_with_error, Address, Bytes, BytesN, Env, String, Vec,
+};
 use soroban_token_sdk::metadata::TokenMetadata;
 use soroban_token_sdk::TokenUtils;
 pub fn check_nonnegative_amount(amount: i128) {
@@ -65,7 +67,7 @@ impl BalancedDollar {
         from: Address,
         amount: u128,
         to: String,
-        data: Option<Bytes>
+        data: Option<Bytes>,
     ) -> Result<(), ContractError> {
         from.require_auth();
         let transfer_data = data.unwrap_or(Bytes::from_array(&e, &[0u8; 32]));
@@ -85,9 +87,18 @@ impl BalancedDollar {
         has_administrator(&e)
     }
 
+    pub fn set_upgrade_authority(e: Env, upgrade_authority: Address) {
+        let mut config = config::get_config(&e);
+
+        config.upgrade_authority.require_auth();
+
+        config.upgrade_authority = upgrade_authority;
+        config::set_config(&e, config);
+    }
+
     pub fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
-        let admin: Address = e.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
+        let config = config::get_config(&e);
+        config.upgrade_authority.require_auth();
 
         e.deployer().update_current_contract_wasm(new_wasm_hash);
     }
@@ -149,4 +160,3 @@ impl BalancedDollar {
         read_symbol(&e)
     }
 }
-

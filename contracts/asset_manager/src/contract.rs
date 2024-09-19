@@ -1,5 +1,5 @@
 use soroban_sdk::{
-    contract, contractimpl, panic_with_error, token, Address, Bytes, BytesN, Env, String, Vec
+    contract, contractimpl, panic_with_error, token, Address, Bytes, BytesN, Env, String, Vec,
 };
 mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
@@ -7,12 +7,12 @@ mod xcall {
 use crate::errors::ContractError;
 use crate::storage_types::TokenData;
 use crate::{
-    config::{get_config, set_config, ConfigData},
+    config::{self, get_config, set_config, ConfigData},
     states::{
         extent_ttl, has_registry, read_administrator, read_token_data, read_tokens,
         write_administrator, write_registry, write_token_data, write_tokens,
     },
-    storage_types::{DataKey, POINTS},
+    storage_types::POINTS,
     xcall_manager_interface::XcallManagerClient,
 };
 use soroban_rlp::balanced::address_utils::is_valid_string_address;
@@ -47,7 +47,7 @@ impl AssetManager {
     pub fn set_admin(env: Env, new_admin: Address) {
         let admin = read_administrator(&env);
         admin.require_auth();
-        
+
         write_administrator(&env, &new_admin);
     }
 
@@ -81,7 +81,16 @@ impl AssetManager {
             return Err(ContractError::PercentageShouldBeLessThanOrEqualToPOINTS);
         }
 
-        write_token_data(&env, token_address, TokenData{period, percentage, last_update: env.ledger().timestamp(), current_limit: 0});
+        write_token_data(
+            &env,
+            token_address,
+            TokenData {
+                period,
+                percentage,
+                last_update: env.ledger().timestamp(),
+                current_limit: 0,
+            },
+        );
         Ok(())
     }
 
@@ -91,7 +100,7 @@ impl AssetManager {
             data.period,
             data.percentage,
             data.last_update,
-            data.current_limit
+            data.current_limit,
         )
     }
 
@@ -107,7 +116,6 @@ impl AssetManager {
         return Ok(Self::calculate_limit(&env, balance, token)?);
     }
 
-    
     fn get_token_balance(env: &Env, token: Address) -> u128 {
         let token_client = token::Client::new(env, &token);
         return token_client.balance(&env.current_contract_address()) as u128;
@@ -251,7 +259,7 @@ impl AssetManager {
         xcall.require_auth();
 
         let method = Deposit::get_method(&e, data.clone());
-        
+
         let icon_asset_manager = config.icon_asset_manager;
         let current_contract = e.current_contract_address();
         if method == String::from_str(&e, &WITHDRAW_TO_NAME) {
@@ -324,9 +332,18 @@ impl AssetManager {
         has_registry(&e)
     }
 
+    pub fn set_upgrade_authority(e: Env, upgrade_authority: Address) {
+        let mut config = config::get_config(&e);
+
+        config.upgrade_authority.require_auth();
+
+        config.upgrade_authority = upgrade_authority;
+        config::set_config(&e, config);
+    }
+
     pub fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
-        let admin: Address = e.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
+        let config = get_config(&e);
+        config.upgrade_authority.require_auth();
 
         e.deployer().update_current_contract_wasm(new_wasm_hash);
     }
