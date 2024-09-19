@@ -1,14 +1,14 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::contract::XcallManagerClient;
+use crate::{config, contract::XcallManagerClient};
 
 use super::setup::*;
 use soroban_rlp::balanced::messages::configure_protocols::ConfigureProtocols;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
-    vec, Address, IntoVal, String, Vec,
+    vec, Address, IntoVal, String, Symbol, Vec,
 };
 
 #[test]
@@ -89,8 +89,7 @@ fn test_whitelist_action() {
     client.white_list_actions(&data);
 
     let result = client.remove_action(&data);
-    assert!(result==true)
-    
+    assert!(result == true)
 }
 
 #[test]
@@ -127,7 +126,7 @@ fn test_handle_call_message_for_configure_protocols_panic_for_action_not_whiteli
     assert_eq!(decoded.sources, sources);
     assert_eq!(decoded.destinations, destinations);
     let (s, _) = client.get_protocols();
-    client.handle_call_message( &ctx.icon_governance, &data, &s);
+    client.handle_call_message(&ctx.icon_governance, &data, &s);
 
     let (s, d) = client.get_protocols();
     assert_eq!(s, sources);
@@ -158,7 +157,7 @@ fn test_handle_call_message_for_configure_protocols() {
     assert_eq!(decoded.sources, sources);
     assert_eq!(decoded.destinations, destinations);
     let (s, _) = client.get_protocols();
-    client.handle_call_message( &ctx.icon_governance, &data, &s);
+    client.handle_call_message(&ctx.icon_governance, &data, &s);
 
     let (s, d) = client.get_protocols();
     assert_eq!(s, sources);
@@ -176,7 +175,8 @@ fn test_handle_call_message_for_configure_protocols() {
         String::from_str(&ctx.env, "stellar/address1"),
         String::from_str(&ctx.env, "stellar/address1"),
     ];
-    let verifiy_false_second = client.verify_protocols(&Vec::from_array(&ctx.env, wrong_sources_second));
+    let verifiy_false_second =
+        client.verify_protocols(&Vec::from_array(&ctx.env, wrong_sources_second));
     assert_eq!(verifiy_false_second, false);
 
     let correct_sources = [
@@ -195,9 +195,7 @@ fn test_handle_call_message_for_configure_protocols() {
 
     //verify protocol recovery
     client.propose_removal(&String::from_str(&ctx.env, "stellar/address1"));
-    let with_protocol_remove: [String; 1] = [
-        String::from_str(&ctx.env, "stellar/address"),
-    ];
+    let with_protocol_remove: [String; 1] = [String::from_str(&ctx.env, "stellar/address")];
     client.verify_protocol_recovery(&Vec::from_array(&ctx.env, with_protocol_remove));
 }
 
@@ -226,7 +224,7 @@ fn test_verify_protocol_recovery_without_removing_protocol() {
     assert_eq!(decoded.sources, sources);
     assert_eq!(decoded.destinations, destinations);
     let (s, _) = client.get_protocols();
-    client.handle_call_message( &ctx.icon_governance, &data, &s);
+    client.handle_call_message(&ctx.icon_governance, &data, &s);
 
     //verify protocol recovery
     let without_protocol_remove: [String; 2] = [
@@ -271,7 +269,7 @@ fn test_get_modified_proposals() {
         .encode(&ctx.env, String::from_str(&ctx.env, "ConfigureProtocols"));
     client.white_list_actions(&data);
     let (s, _) = client.get_protocols();
-    client.handle_call_message( &ctx.icon_governance, &data, &s);
+    client.handle_call_message(&ctx.icon_governance, &data, &s);
 
     client.propose_removal(&String::from_str(&ctx.env, "stellar/address"));
 
@@ -364,7 +362,7 @@ fn test_handle_call_message_for_configure_protocols_panic_for_protocol_mismatch(
     assert_eq!(decoded.sources, sources);
     assert_eq!(decoded.destinations, destinations);
     let s = Vec::from_array(&ctx.env, [ctx.xcall.to_string()]);
-    client.handle_call_message( &ctx.icon_governance, &data, &s);
+    client.handle_call_message(&ctx.icon_governance, &data, &s);
 
     let (s, d) = client.get_protocols();
     assert_eq!(s, sources);
@@ -414,4 +412,34 @@ fn test_extend_ttl() {
     ctx.init_context(&client);
 
     client.extend_ttl();
+}
+
+#[test]
+fn test_set_upgrade_authority() {
+    let ctx = TestContext::default();
+    let client = XcallManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.init_context(&client);
+
+    let new_upgrade_authority = Address::generate(&ctx.env);
+    client.set_upgrade_authority(&new_upgrade_authority);
+
+    assert_eq!(
+        ctx.env.auths(),
+        std::vec![(
+            ctx.upgrade_authority.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    ctx.registry.clone(),
+                    Symbol::new(&ctx.env, "set_upgrade_authority"),
+                    (&new_upgrade_authority,).into_val(&ctx.env)
+                )),
+                sub_invocations: std::vec![]
+            }
+        )]
+    );
+
+    ctx.env.as_contract(&client.address, || {
+        let config = config::get_config(&ctx.env);
+        assert_eq!(config.upgrade_authority, new_upgrade_authority)
+    });
 }

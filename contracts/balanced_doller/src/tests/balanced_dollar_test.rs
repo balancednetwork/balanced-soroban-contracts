@@ -1,14 +1,16 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::contract::BalancedDollarClient;
+use crate::{config, contract::BalancedDollarClient};
 
 use super::setup::*;
 use soroban_rlp::balanced::messages::{
     cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert,
 };
 use soroban_sdk::{
-    symbol_short, testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation}, xdr::ToXdr, Address, Bytes, BytesN, FromVal, IntoVal, String, Vec
+    symbol_short,
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    Address, Bytes, IntoVal, String, Symbol, Vec,
 };
 
 #[test]
@@ -67,7 +69,7 @@ fn test_cross_transfer_with_to_and_data() {
         &ctx.env,
         "CA36FQITV33RO5SJFPTNLRQBD6ZNAEJG7F7J5KWCV4OP7SQHDMIZCT33",
     ));
-    
+
     std::println!("to address is: {:?}", to);
     let data = CrossTransfer::new(
         ctx.depositor.to_string(),
@@ -76,12 +78,9 @@ fn test_cross_transfer_with_to_and_data() {
         Bytes::from_array(&ctx.env, &items),
     )
     .encode(&ctx.env, String::from_str(&ctx.env, "xCrossTransfer"));
-    
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
-    
-
+    client.handle_call_message(&ctx.icon_bn_usd, &data, &sources);
 
     ctx.mint_native_token(&from_address, 500u128);
     assert_eq!(ctx.get_native_token_balance(&from_address), 500u128);
@@ -105,8 +104,6 @@ fn test_cross_transfer_with_to_and_data() {
     );
     assert_eq!(ctx.get_native_token_balance(&from_address), 400u128) // why 300?
 }
-
-
 
 #[test]
 fn test_handle_call_message_for_cross_transfer() {
@@ -144,7 +141,7 @@ fn test_handle_call_message_for_cross_transfer() {
     assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
+    client.handle_call_message(&ctx.icon_bn_usd, &data, &sources);
     assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128)
 }
 
@@ -220,7 +217,7 @@ fn test_handle_call_message_for_cross_transfer_panic_for_protocol_mismatch() {
     assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.xcall.to_string()]);
-    client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
+    client.handle_call_message(&ctx.icon_bn_usd, &data, &sources);
 
     assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128)
 }
@@ -262,7 +259,7 @@ fn test_handle_call_message_for_cross_transfer_panic_for_icon_bnusd() {
     assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message( &ctx.icon_governance, &data, &sources);
+    client.handle_call_message(&ctx.icon_governance, &data, &sources);
 
     assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128)
 }
@@ -305,7 +302,7 @@ fn test_handle_call_message_for_cross_transfer_panic_for_wront_message_type() {
     assert_eq!(client.balance(withdrawer_address), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message( &ctx.icon_bn_usd, &data, &sources);
+    client.handle_call_message(&ctx.icon_bn_usd, &data, &sources);
 
     assert_eq!(client.balance(withdrawer_address), bnusd_amount as i128)
 }
@@ -328,11 +325,7 @@ fn test_handle_call_message_for_cross_transfer_revert() {
     assert_eq!(client.balance(&ctx.withdrawer), 0);
 
     let sources = Vec::from_array(&ctx.env, [ctx.centralized_connection.to_string()]);
-    client.handle_call_message(
-        &ctx.xcall_client.get_network_address(),
-        &data,
-        &sources,
-    );
+    client.handle_call_message(&ctx.xcall_client.get_network_address(), &data, &sources);
 
     assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128)
 }
@@ -364,11 +357,7 @@ fn test_handle_call_message_for_cross_transfer_revert_panic_for_xcall() {
             "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL"
         ),
     );
-    client.handle_call_message(
-        &wrong_network_address,
-        &data,
-        &sources,
-    );
+    client.handle_call_message(&wrong_network_address, &data, &sources);
 
     assert_eq!(client.balance(&ctx.withdrawer), bnusd_amount as i128)
 }
@@ -382,4 +371,34 @@ fn test_extend_ttl() {
     ctx.init_context(&client);
 
     client.extend_ttl()
+}
+
+#[test]
+fn test_set_upgrade_authority() {
+    let ctx = TestContext::default();
+    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
+    ctx.init_context(&client);
+
+    let new_upgrade_authority = Address::generate(&ctx.env);
+    client.set_upgrade_authority(&new_upgrade_authority);
+
+    assert_eq!(
+        ctx.env.auths(),
+        std::vec![(
+            ctx.upgrade_authority.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    ctx.registry.clone(),
+                    Symbol::new(&ctx.env, "set_upgrade_authority"),
+                    (&new_upgrade_authority,).into_val(&ctx.env)
+                )),
+                sub_invocations: std::vec![]
+            }
+        )]
+    );
+
+    ctx.env.as_contract(&client.address, || {
+        let config = config::get_config(&ctx.env);
+        assert_eq!(config.upgrade_authority, new_upgrade_authority)
+    });
 }

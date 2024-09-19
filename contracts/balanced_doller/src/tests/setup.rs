@@ -29,6 +29,7 @@ pub struct TestContext {
     pub admin: Address,
     pub depositor: Address,
     pub withdrawer: Address,
+    pub upgrade_authority: Address,
     pub xcall: Address,
     pub xcall_manager: Address,
     pub icon_bn_usd: String,
@@ -44,7 +45,9 @@ impl TestContext {
     pub fn default() -> Self {
         let env = Env::default();
         let token_admin = Address::generate(&env);
-        let token = env.register_stellar_asset_contract_v2(token_admin.clone()).address();
+        let token = env
+            .register_stellar_asset_contract_v2(token_admin.clone())
+            .address();
         let balanced_dollar = env.register_contract(None, BalancedDollar);
         let centralized_connection = env.register_contract_wasm(None, connection::WASM);
         let xcall_manager = env.register_contract_wasm(None, xcall_manager::WASM);
@@ -59,6 +62,7 @@ impl TestContext {
             admin: Address::generate(&env),
             depositor: Address::generate(&env),
             withdrawer: Address::generate(&env),
+            upgrade_authority: Address::generate(&env),
             xcall: xcall.clone(),
             xcall_manager,
             icon_bn_usd: String::from_str(&env, "icon01/hxjnfh4u"),
@@ -66,7 +70,9 @@ impl TestContext {
             token,
             centralized_connection,
             nid: String::from_str(&env, "stellar"),
-            native_token: env.register_stellar_asset_contract_v2(token_admin.clone()).address(),
+            native_token: env
+                .register_stellar_asset_contract_v2(token_admin.clone())
+                .address(),
             xcall_client: xcall::Client::new(&env, &xcall),
             env,
         }
@@ -81,10 +87,10 @@ impl TestContext {
             xcall_manager: self.xcall_manager.clone(),
             nid: self.nid.clone(),
             icon_bn_usd: self.icon_bn_usd.clone(),
-            xcall_network_address: self.xcall_client.get_network_address()
+            xcall_network_address: self.xcall_client.get_network_address(),
+            upgrade_authority: self.upgrade_authority.clone(),
         };
         client.initialize(&self.admin, &config);
-        
     }
 
     pub fn init_xcall_manager_context(&self) {
