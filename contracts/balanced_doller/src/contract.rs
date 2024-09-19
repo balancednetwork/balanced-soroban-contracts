@@ -8,7 +8,6 @@ use crate::errors::ContractError;
 use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
 use crate::states::{has_administrator, read_administrator, write_administrator};
 use crate::storage_types::{DataKey, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
-use soroban_sdk::token::{self, Interface as _};
 use soroban_sdk::{contract, contractimpl, panic_with_error, Address, Bytes, BytesN, Env, String, Vec};
 use soroban_token_sdk::metadata::TokenMetadata;
 use soroban_token_sdk::TokenUtils;
@@ -98,15 +97,12 @@ impl BalancedDollar {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
     }
-}
 
-#[contractimpl]
-impl token::Interface for BalancedDollar {
-    fn allowance(e: Env, from: Address, spender: Address) -> i128 {
+    pub fn allowance(e: Env, from: Address, spender: Address) -> i128 {
         read_allowance(&e, from, spender).amount
     }
 
-    fn approve(e: Env, from: Address, spender: Address, amount: i128, expiration_ledger: u32) {
+    pub fn approve(e: Env, from: Address, spender: Address, amount: i128, expiration_ledger: u32) {
         from.require_auth();
 
         check_nonnegative_amount(amount);
@@ -117,11 +113,11 @@ impl token::Interface for BalancedDollar {
             .approve(from, spender, amount, expiration_ledger);
     }
 
-    fn balance(e: Env, id: Address) -> i128 {
+    pub fn balance(e: Env, id: Address) -> i128 {
         read_balance(&e, id)
     }
 
-    fn transfer(e: Env, from: Address, to: Address, amount: i128) {
+    pub fn transfer(e: Env, from: Address, to: Address, amount: i128) {
         from.require_auth();
 
         check_nonnegative_amount(amount);
@@ -130,7 +126,7 @@ impl token::Interface for BalancedDollar {
         TokenUtils::new(&e).events().transfer(from, to, amount);
     }
 
-    fn transfer_from(e: Env, spender: Address, from: Address, to: Address, amount: i128) {
+    pub fn transfer_from(e: Env, spender: Address, from: Address, to: Address, amount: i128) {
         spender.require_auth();
 
         check_nonnegative_amount(amount);
@@ -141,29 +137,15 @@ impl token::Interface for BalancedDollar {
         TokenUtils::new(&e).events().transfer(from, to, amount)
     }
 
-    fn burn(e: Env, from: Address, amount: i128) {
-        balanced_dollar::_burn(&e, from, amount);
-    }
-
-    fn burn_from(e: Env, spender: Address, from: Address, amount: i128) {
-        spender.require_auth();
-
-        check_nonnegative_amount(amount);
-
-        spend_allowance(&e, from.clone(), spender, amount);
-        spend_balance(&e, from.clone(), amount);
-        TokenUtils::new(&e).events().burn(from, amount)
-    }
-
-    fn decimals(e: Env) -> u32 {
+    pub fn decimals(e: Env) -> u32 {
         read_decimal(&e)
     }
 
-    fn name(e: Env) -> String {
+    pub fn name(e: Env) -> String {
         read_name(&e)
     }
 
-    fn symbol(e: Env) -> String {
+    pub fn symbol(e: Env) -> String {
         read_symbol(&e)
     }
 }
