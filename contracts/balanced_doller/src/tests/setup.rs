@@ -98,6 +98,7 @@ impl TestContext {
         let config = XcallManagerConfigData {
             xcall: self.xcall.clone(),
             icon_governance: self.icon_governance.clone(),
+            upgrade_authority: self.upgrade_authority.clone(),
         };
         let sources = Vec::from_array(&self.env, [self.centralized_connection.to_string()]);
         let destinations =
