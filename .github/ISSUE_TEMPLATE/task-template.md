@@ -2,7 +2,7 @@
 name: Task Template
 about: New tasks created should consist of the following information
 title: ''
-labels: 
+labels: iBriz
 assignees: ''
 
 ---
