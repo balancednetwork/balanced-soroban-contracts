@@ -17,4 +17,6 @@ pub enum ContractError {
     AdminRequired = 11,
     TokenExists = 12,
     InvalidAddress = 13,
+    TokenDoesNotExists = 14,
+    InvalidAmount = 15
 }
