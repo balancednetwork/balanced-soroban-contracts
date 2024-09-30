@@ -31,13 +31,14 @@ pub struct AssetManager;
 
 #[contractimpl]
 impl AssetManager {
-    pub fn initialize(env: Env, registry: Address, admin: Address, config: ConfigData) {
+    pub fn initialize(env: Env, registry: Address, admin: Address, config: ConfigData)  -> Result<(), ContractError> {
         if has_registry(&env.clone()) {
-            panic_with_error!(&env, ContractError::ContractAlreadyInitialized)
+            return Err(ContractError::ContractAlreadyInitialized)
         }
         write_registry(&env, &registry);
         write_administrator(&env, &admin);
         Self::configure(env, config);
+        Ok(())
     }
 
     pub fn get_config(env: Env) -> ConfigData {
@@ -94,14 +95,17 @@ impl AssetManager {
         Ok(())
     }
 
-    pub fn get_rate_limit(env: Env, token_address: Address) -> (u64, u32, u64, u64) {
+    pub fn get_rate_limit(env: Env, token_address: Address) -> Result<(u64, u32, u64, u64), ContractError> {
         let data: TokenData = read_token_data(&env, token_address);
-        (
+        if data.period<=0 {
+            return Err(ContractError::TokenDoesNotExists);
+        }
+        Ok((
             data.period,
             data.percentage,
             data.last_update,
             data.current_limit,
-        )
+        ))
     }
 
     pub fn reset_limit(env: Env, token: Address) {
@@ -121,11 +125,11 @@ impl AssetManager {
         return token_client.balance(&env.current_contract_address()) as u128;
     }
 
-    pub fn verify_withdraw(env: Env, token: Address, amount: u128) -> Result<bool, ContractError> {
+    fn verify_withdraw(env: Env, token: Address, amount: u128) -> Result<bool, ContractError> {
         let balance = Self::get_token_balance(&env, token.clone());
         let limit = Self::calculate_limit(&env, balance, token.clone())?;
         if balance - amount < limit {
-            panic_with_error!(&env, ContractError::ExceedsWithdrawLimit);
+            return Err(ContractError::ExceedsWithdrawLimit);
         };
         let mut data: TokenData = read_token_data(&env, token.clone());
         data.current_limit = limit as u64;
@@ -204,7 +208,7 @@ impl AssetManager {
             token.clone(),
             current_address.clone(),
             amount,
-        );
+        )?;
 
         let xcall_message: Deposit = Deposit::new(
             token.to_string(),
@@ -313,14 +317,19 @@ impl AssetManager {
 
         let verified = Self::verify_withdraw(e.clone(), token.clone(), amount)?;
         if verified {
-            Self::transfer_token_to(e, from, token, to, amount);
+            Self::transfer_token_to(e, from, token, to, amount)?;
         }
         Ok(())
     }
 
-    fn transfer_token_to(e: &Env, from: Address, token: Address, to: Address, amount: u128) {
+    fn transfer_token_to(e: &Env, from: Address, token: Address, to: Address, amount: u128) -> Result<(), ContractError> {
         let token_client = token::Client::new(e, &token);
-        token_client.transfer(&from, &to, &(amount as i128));
+        if amount <= i128::MAX as u128 {
+            token_client.transfer(&from, &to, &(amount as i128));
+         } else {
+             return Err(ContractError::InvalidAmount)
+         }
+        Ok(())
     }
 
     pub fn balance_of(e: Env, token: Address) -> i128 {
@@ -351,4 +360,6 @@ impl AssetManager {
     pub fn extend_ttl(e: Env) {
         extent_ttl(&e);
     }
+
+    
 }
