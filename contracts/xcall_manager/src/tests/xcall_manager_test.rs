@@ -337,37 +337,6 @@ fn test_handle_call_message_for_configure_protocols_panic_for_only_icon_governan
     assert_eq!(d, destinations);
 }
 
-#[test]
-#[should_panic(expected = "HostError: Error(Contract, #7)")]
-fn test_handle_call_message_for_configure_protocols_panic_for_protocol_mismatch() {
-    let ctx = TestContext::default();
-    let client = XcallManagerClient::new(&ctx.env, &ctx.registry);
-    ctx.env.mock_all_auths();
-    ctx.init_context(&client);
-
-    let source_items = [
-        String::from_str(&ctx.env, "stellar/address"),
-        String::from_str(&ctx.env, "stellar/address1"),
-    ];
-    let destination_items = [
-        String::from_str(&ctx.env, "icon/address"),
-        String::from_str(&ctx.env, "icon/address1"),
-    ];
-    let sources = Vec::from_array(&ctx.env, source_items);
-    let destinations = Vec::from_array(&ctx.env, destination_items);
-    let data = ConfigureProtocols::new(sources.clone(), destinations.clone())
-        .encode(&ctx.env, String::from_str(&ctx.env, "ConfigureProtocols"));
-    let decoded: ConfigureProtocols = ConfigureProtocols::decode(&ctx.env, data.clone());
-    client.white_list_actions(&data);
-    assert_eq!(decoded.sources, sources);
-    assert_eq!(decoded.destinations, destinations);
-    let s = Vec::from_array(&ctx.env, [ctx.xcall.to_string()]);
-    client.handle_call_message(&ctx.icon_governance, &data, &s);
-
-    let (s, d) = client.get_protocols();
-    assert_eq!(s, sources);
-    assert_eq!(d, destinations);
-}
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #10)")]

@@ -71,11 +71,15 @@ impl XcallManager {
     }
 
     pub fn white_list_actions(e: Env, action: Bytes) {
+        let admin = read_administrator(&e);
+        admin.require_auth();
         let actions = WhiteListActions::new(DataKey::WhiteListedActions);
         actions.add(&e, action);
     }
 
     pub fn remove_action(e: Env, action: Bytes) -> Result<bool, ContractError> {
+        let admin = read_administrator(&e);
+        admin.require_auth();
         let actions = WhiteListActions::new(DataKey::WhiteListedActions);
         if !actions.contains(&e, action.clone()) {
             return Err(ContractError::NotWhiteListed);
@@ -141,10 +145,6 @@ impl XcallManager {
             return Err(ContractError::NotWhiteListed);
         }
         actions.remove(&e, data.clone());
-
-        if !Self::verify_protocols(e.clone(), protocols.clone())? {
-            return Err(ContractError::ProtocolMismatch);
-        };
 
         let method = ConfigureProtocols::get_method(&e.clone(), data.clone());
 

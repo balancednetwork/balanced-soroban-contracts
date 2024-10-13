@@ -11,7 +11,7 @@ use crate::{
     config::{get_config, set_config, ConfigData},
     xcall_manager_interface::XcallManagerClient,
 };
-use soroban_rlp::balanced::address_utils::{get_address_from, is_valid_bytes_address};
+use soroban_rlp::balanced::address_utils::is_valid_bytes_address;
 use soroban_rlp::balanced::messages::{
     cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert,
 };
@@ -31,7 +31,11 @@ pub fn _cross_transfer(
     to: String,
     data: Bytes,
 ) -> Result<(), ContractError> {
-    _burn(&e, from.clone(), amount as i128);
+    if amount <= i128::MAX as u128 {
+        _burn(&e, from.clone(), amount as i128);
+    }else{
+        return Err(ContractError::InvalidAmount);
+    }
     let xcall_message = CrossTransfer::new(from.clone().to_string(), to, amount, data);
     let rollback = CrossTransferRevert::new(from.clone(), amount);
     let config = get_config(&e);
@@ -87,13 +91,21 @@ pub fn _handle_call_message(
         }
         let message = CrossTransfer::decode(&e, data);
         let to_network_address: Address = get_address(message.to, &e)?;
-        _mint(&e, to_network_address, message.amount as i128);
+        if message.amount <= i128::MAX as u128 {
+            _mint(&e, to_network_address, message.amount as i128);
+        }else{
+            return Err(ContractError::InvalidAmount);
+        }
     } else if method == String::from_str(&e, &CROSS_TRANSFER_REVERT) {
         if config.xcall_network_address != from {
             return Err(ContractError::OnlyCallService);
         }
         let message = CrossTransferRevert::decode(&e, data);
-        _mint(&e, message.to, message.amount as i128);
+        if message.amount <= i128::MAX as u128 {
+            _mint(&e, message.to, message.amount as i128);
+        }else{
+            return Err(ContractError::InvalidAmount);
+        }
     } else {
         return Err(ContractError::UnknownMessageType);
     }
