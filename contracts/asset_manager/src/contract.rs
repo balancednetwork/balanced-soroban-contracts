@@ -154,7 +154,7 @@ impl AssetManager {
 
         let max_withdraw = balance - min_reserve;
         let last_update: u64 = data.last_update;
-        let time_diff = (&env.ledger().timestamp() - last_update) / 1000;
+        let time_diff = &env.ledger().timestamp() - last_update;
 
         let allowed_withdrawal = (max_withdraw * time_diff as u128) / period;
         let mut reserve: u128 = data.current_limit as u128;
@@ -179,6 +179,10 @@ impl AssetManager {
         to: Option<String>,
         data: Option<Bytes>,
     ) -> Result<(), ContractError> {
+        if amount <= 0{
+            return Err(ContractError::AmountIsLessThanMinimumAmount);
+        }
+
         let deposit_to = to.unwrap_or(String::from_str(&e, ""));
         let deposit_data = data.unwrap_or(Bytes::from_array(&e, &[0u8; 32]));
 
@@ -304,7 +308,7 @@ impl AssetManager {
         Ok(())
     }
 
-    pub fn withdraw(
+    fn withdraw(
         e: &Env,
         from: Address,
         token: Address,

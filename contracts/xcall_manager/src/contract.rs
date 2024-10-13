@@ -146,10 +146,6 @@ impl XcallManager {
         }
         actions.remove(&e, data.clone());
 
-        if !Self::verify_protocols(e.clone(), protocols.clone())? {
-            return Err(ContractError::ProtocolMismatch);
-        };
-
         let method = ConfigureProtocols::get_method(&e.clone(), data.clone());
 
         let sources = read_sources(&e);

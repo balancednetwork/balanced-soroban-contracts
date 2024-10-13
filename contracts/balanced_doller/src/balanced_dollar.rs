@@ -11,7 +11,7 @@ use crate::{
     config::{get_config, set_config, ConfigData},
     xcall_manager_interface::XcallManagerClient,
 };
-use soroban_rlp::balanced::address_utils::{get_address_from, is_valid_bytes_address};
+use soroban_rlp::balanced::address_utils::is_valid_bytes_address;
 use soroban_rlp::balanced::messages::{
     cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert,
 };
