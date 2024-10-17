@@ -17,14 +17,6 @@ impl ConfigureProtocols {
         }
     }
 
-    pub fn sources(&self) -> &Vec<String> {
-        &self.sources
-    }
-
-    pub fn destinations(&self) -> &Vec<String> {
-        &self.destinations
-    }
-
     pub fn encode(&self, e: &Env, method: String) -> Bytes {
         let mut list: Vec<Bytes> = Vec::new(&e);
         list.push_back(encoder::encode_string(&e, method));
