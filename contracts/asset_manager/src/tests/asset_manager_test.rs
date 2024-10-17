@@ -57,9 +57,6 @@ fn test_configure_rate_limit_panic() {
     let percentage = &10001;
     client.configure_rate_limit(&ctx.token, period, percentage);
 
-    let limit = client.get_withdraw_limit(&ctx.token);
-    // let verified = client.verify_withdraw(&ctx.token, &limit);
-    // assert_eq!(verified, true);
 }
 
 #[test]
@@ -86,9 +83,7 @@ fn test_configure_rate_limit() {
     );
     let token_data = client.get_rate_limit(&ctx.token);
     assert_eq!(token_data.3, 0);
-    let limit = client.get_withdraw_limit(&ctx.token);
-    // let verified = client.verify_withdraw(&ctx.token, &limit);
-    // assert_eq!(verified, true);
+    
 }
 
 #[test]
@@ -136,7 +131,6 @@ fn test_veryfy_rate_limit() {
     let percentage = &300;
     client.configure_rate_limit(&ctx.token, period, percentage);
 
-    //let token_client = token::Client::new(&ctx.env, &ctx.token);
     let stellar_asset_client: token::StellarAssetClient =
         token::StellarAssetClient::new(&ctx.env, &ctx.token);
     let amount_i128: i128 = 100000i128;
@@ -148,7 +142,6 @@ fn test_veryfy_rate_limit() {
     ctx.mint_native_token(&ctx.depositor, 500u128);
     assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 500u128);
 
-    //token_client.approve(&ctx.depositor, &ctx.registry, &(amount_i128+amount_i128), &1312000);
     client.deposit(
         &ctx.depositor,
         &ctx.token,
@@ -159,51 +152,7 @@ fn test_veryfy_rate_limit() {
 
     let limit = client.get_withdraw_limit(&ctx.token);
     assert_eq!(limit, 3000);
-    // let verified = client.verify_withdraw(&ctx.token, &(amount - 3000 - 1));
-    // assert_eq!(verified, true);
 }
-
-// #[test]
-// #[should_panic(expected = "HostError: Error(Contract, #5)")]
-// fn test_veryfy_rate_limit_panic_exceeds_withdraw_limit() {
-//     let ctx = TestContext::default();
-//     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
-//     ctx.init_context(&client);
-//     let period = &300;
-//     let percentage = &300;
-//     client.configure_rate_limit(&ctx.token, period, percentage);
-
-//     let token_client = token::Client::new(&ctx.env, &ctx.token);
-//     let stellar_asset_client: token::StellarAssetClient =
-//         token::StellarAssetClient::new(&ctx.env, &ctx.token);
-//     let amount_i128: i128 = 100000i128;
-//     let amount = &(amount_i128 as u128);
-//     let mint_amount = &(amount_i128 + amount_i128);
-
-//     stellar_asset_client.mint(&ctx.depositor, mint_amount);
-
-//     ctx.mint_native_token(&ctx.depositor, 500u128);
-//     assert_eq!(ctx.get_native_token_balance(&ctx.depositor), 500u128);
-
-//     token_client.approve(
-//         &ctx.depositor,
-//         &ctx.registry,
-//         &(amount_i128 + amount_i128),
-//         &1312000,
-//     );
-//     client.deposit(
-//         &ctx.depositor,
-//         &ctx.token,
-//         &amount,
-//         &Option::Some(String::from_str(&ctx.env, "")),
-//         &Option::Some(Bytes::from_array(&ctx.env, &[0u8; 32])),
-//     );
-
-//     let limit = client.get_withdraw_limit(&ctx.token);
-//     assert_eq!(limit, 3000);
-//     // let verified = client.verify_withdraw(&ctx.token, &(amount - 3000 + 1));
-//     // assert_eq!(verified, true);
-// }
 
 #[test]
 fn test_deposit_with_to_and_without_data() {
@@ -289,7 +238,6 @@ fn test_handle_call_message_for_withdraw_to() {
     ctx.env.mock_all_auths();
 
     ctx.init_context(&client);
-    //client.configure_rate_limit(&ctx.token, &300, &300);
 
     let bnusd_amount = 100000u128;
     let token_client = token::Client::new(&ctx.env, &ctx.token);
