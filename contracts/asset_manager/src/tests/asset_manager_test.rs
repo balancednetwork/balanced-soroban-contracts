@@ -30,6 +30,7 @@ fn test_set_admin() {
 
     let new_admin: Address = Address::generate(&ctx.env);
     client.set_admin(&new_admin);
+    
     assert_eq!(
         ctx.env.auths(),
         std::vec![(
