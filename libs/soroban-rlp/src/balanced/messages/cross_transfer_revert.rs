@@ -17,14 +17,6 @@ impl CrossTransferRevert{
         }
     }
 
-    pub fn to(&self) -> &Address {
-        &self.to
-    }
-
-    pub fn amount(&self) -> &u128 {
-        &self.amount
-    }
-
     pub fn encode(&self, e: &Env, method: String) -> Bytes {
         let mut list: Vec<Bytes> = Vec::new(&e);
 

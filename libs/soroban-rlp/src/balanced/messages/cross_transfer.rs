@@ -21,14 +21,6 @@ impl CrossTransfer {
         }
     }
 
-    pub fn from(&self) -> &String {
-        &self.from
-    }
-
-    pub fn to(&self) -> &String {
-        &self.to
-    }
-
     pub fn encode(&self, e: &Env, method: String) -> Bytes {
         let mut list: Vec<Bytes> = Vec::new(&e);
         list.push_back(encoder::encode_string(&e, method));

@@ -1,5 +1,5 @@
 use soroban_sdk::{
-    contract, contractimpl, panic_with_error, token, Address, Bytes, BytesN, Env, String, Vec,
+    contract, contractimpl, token, Address, Bytes, BytesN, Env, String, Vec,
 };
 mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");

@@ -23,26 +23,6 @@ impl Deposit {
         }
     }
 
-    pub fn token_address(&self) -> &String {
-        &self.token_address
-    }
-
-    pub fn from(&self) -> &String {
-        &self.from
-    }
-
-    pub fn to(&self) -> &String {
-        &self.to
-    }
-
-    pub fn amount(&self) -> &u128 {
-        &self.amount
-    }
-
-    pub fn data(&self) -> &Bytes {
-        &self.data
-    }
-
     pub fn encode(&self, e: &Env, method: String) -> Bytes {
         let mut list: Vec<Bytes> = Vec::new(&e);
         list.push_back(encoder::encode_string(&e, method));
