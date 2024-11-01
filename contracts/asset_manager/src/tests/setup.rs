@@ -82,7 +82,6 @@ impl TestContext {
             xcall_manager: self.xcall_manager.clone(),
             native_address: self.native_token.clone(),
             icon_asset_manager: self.icon_asset_manager.clone(),
-            xcall_network_address: self.xcall_client.get_network_address(),
             upgrade_authority: self.upgrade_authority.clone(),
         };
         client.initialize(&self.registry, &self.admin, &config);

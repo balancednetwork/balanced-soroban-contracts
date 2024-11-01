@@ -97,7 +97,8 @@ pub fn _handle_call_message(
             return Err(ContractError::InvalidAmount);
         }
     } else if method == String::from_str(&e, &CROSS_TRANSFER_REVERT) {
-        if config.xcall_network_address != from {
+        let xcall_network_address = xcall_client(&e, &xcall).get_network_address();
+        if xcall_network_address != from {
             return Err(ContractError::OnlyCallService);
         }
         let message = CrossTransferRevert::decode(&e, data);

@@ -8,7 +8,6 @@ pub struct ConfigData {
     pub xcall_manager: Address,
     pub native_address: Address,
     pub icon_asset_manager: String,
-    pub xcall_network_address: String,
     pub upgrade_authority: Address,
 }
 
