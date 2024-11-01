@@ -17,7 +17,6 @@ fn test_initialize() {
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
 
     ctx.init_context(&client);
-
     let registry_exists = client.has_registry();
     assert_eq!(registry_exists, true)
 }

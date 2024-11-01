@@ -288,7 +288,8 @@ impl AssetManager {
                 message.amount,
             )?;
         } else if method == String::from_str(&e, &DEPOSIT_REVERT_NAME) {
-            if config.xcall_network_address != from {
+            let xcall_network_address = Self::xcall_client(&e, &xcall).get_network_address();
+            if xcall_network_address != from {
                 return Err(ContractError::OnlyCallService);
             }
             let message: DepositRevert = DepositRevert::decode(&e.clone(), data);
