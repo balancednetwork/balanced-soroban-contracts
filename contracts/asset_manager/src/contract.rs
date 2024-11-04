@@ -109,6 +109,8 @@ impl AssetManager {
     }
 
     pub fn reset_limit(env: Env, token: Address) {
+        let admin = read_administrator(&env);
+        admin.require_auth();
         let balance = Self::get_token_balance(&env, token.clone());
         let mut data: TokenData = read_token_data(&env, token.clone());
         data.current_limit = (balance * data.percentage as u128 / POINTS) as u64;

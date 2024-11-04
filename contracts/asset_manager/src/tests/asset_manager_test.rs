@@ -29,7 +29,7 @@ fn test_set_admin() {
 
     let new_admin: Address = Address::generate(&ctx.env);
     client.set_admin(&new_admin);
-    
+
     assert_eq!(
         ctx.env.auths(),
         std::vec![(
@@ -56,7 +56,6 @@ fn test_configure_rate_limit_panic() {
     let period = &300;
     let percentage = &10001;
     client.configure_rate_limit(&ctx.token, period, percentage);
-
 }
 
 #[test]
@@ -83,7 +82,6 @@ fn test_configure_rate_limit() {
     );
     let token_data = client.get_rate_limit(&ctx.token);
     assert_eq!(token_data.3, 0);
-    
 }
 
 #[test]
@@ -480,6 +478,31 @@ fn test_extend_ttl() {
         let before_ttl = ctx.env.storage().persistent().get_ttl(&key);
         std::println!("before ttl is: {:?}", before_ttl);
     });
+}
+
+#[test]
+fn test_reset_limit() {
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.init_context(&client);
+
+    client.configure_rate_limit(&ctx.token, &300, &300);
+    client.reset_limit(&ctx.token);
+
+    assert_eq!(
+        ctx.env.auths(),
+        std::vec![(
+            ctx.admin.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    ctx.registry.clone(),
+                    Symbol::new(&ctx.env, "reset_limit"),
+                    (&ctx.token,).into_val(&ctx.env)
+                )),
+                sub_invocations: std::vec![]
+            }
+        )]
+    );
 }
 
 #[test]
