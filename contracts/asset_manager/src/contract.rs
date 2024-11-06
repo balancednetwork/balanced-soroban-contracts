@@ -96,10 +96,8 @@ impl AssetManager {
     }
 
     pub fn get_rate_limit(env: Env, token_address: Address) -> Result<(u64, u32, u64, u64), ContractError> {
-        let data: TokenData = read_token_data(&env, token_address);
-        if data.period<=0 {
-            return Err(ContractError::TokenDoesNotExists);
-        }
+        let data: TokenData = read_token_data(&env, token_address)?;
+        
         Ok((
             data.period,
             data.percentage,
@@ -108,13 +106,14 @@ impl AssetManager {
         ))
     }
 
-    pub fn reset_limit(env: Env, token: Address) {
+    pub fn reset_limit(env: Env, token: Address) -> Result<bool, ContractError> {
         let admin = read_administrator(&env);
         admin.require_auth();
         let balance = Self::get_token_balance(&env, token.clone());
-        let mut data: TokenData = read_token_data(&env, token.clone());
+        let mut data: TokenData = read_token_data(&env, token.clone())?;
         data.current_limit = (balance * data.percentage as u128 / POINTS) as u64;
         write_token_data(&env, token, data);
+        Ok(true)
     }
 
     pub fn get_withdraw_limit(env: Env, token: Address) -> Result<u128, ContractError> {
@@ -133,7 +132,7 @@ impl AssetManager {
         if balance - amount < limit {
             return Err(ContractError::ExceedsWithdrawLimit);
         };
-        let mut data: TokenData = read_token_data(&env, token.clone());
+        let mut data: TokenData = read_token_data(&env, token.clone())?;
         data.current_limit = limit as u64;
         data.last_update = env.ledger().timestamp();
         write_token_data(&env, token, data);
@@ -145,7 +144,7 @@ impl AssetManager {
         balance: u128,
         token: Address,
     ) -> Result<u128, ContractError> {
-        let data: TokenData = read_token_data(&env, token);
+        let data: TokenData = read_token_data(&env, token)?;
         let period: u128 = data.period as u128;
         let percentage: u128 = data.percentage as u128;
         if period == 0 {
