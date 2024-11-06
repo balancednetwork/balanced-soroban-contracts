@@ -242,7 +242,7 @@ fn test_handle_call_message_for_withdraw_to() {
     let stellar_asset_client: token::StellarAssetClient =
         token::StellarAssetClient::new(&ctx.env, &ctx.token);
     stellar_asset_client.mint(&ctx.registry, &((bnusd_amount * 2) as i128));
-
+    client.configure_rate_limit(&ctx.token, &300, &300);
     let data = WithdrawTo::new(
         ctx.token.to_string(),
         ctx.withdrawer.to_string(),

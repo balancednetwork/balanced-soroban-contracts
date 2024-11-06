@@ -1,6 +1,6 @@
 use soroban_sdk::{Address, Env, Vec};
 
-use crate::storage_types::{DataKey, TokenData};
+use crate::{errors::ContractError, storage_types::{DataKey, TokenData}};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17280;
 pub(crate) const INSTANCE_BUMP_AMOUNT: u32 = 30 * DAY_IN_LEDGERS;
@@ -41,10 +41,14 @@ pub fn write_token_data(env: &Env, token_address: Address, data: TokenData) {
     env.storage().persistent().set(&key, &data);
 }
 
-pub fn read_token_data(env: &Env, token_address: Address) -> TokenData {
-    let default = TokenData{percentage: 0, period: 0, last_update: 0, current_limit: 0 };
+pub fn read_token_data(env: &Env, token_address: Address) -> Result<TokenData, ContractError> {
     let key = DataKey::TokenData(token_address);
-    env.storage().persistent().get(&key).unwrap_or(default)
+    let token_data: TokenData = env
+        .storage()
+        .persistent()
+        .get(&key)
+        .ok_or(ContractError::TokenDoesNotExists)?;
+    Ok(token_data)
 }
 
 pub fn write_tokens(e: &Env, token: Address) {
