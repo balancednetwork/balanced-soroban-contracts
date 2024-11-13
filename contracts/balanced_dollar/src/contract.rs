@@ -5,7 +5,6 @@ use crate::balance::{read_balance, receive_balance, spend_balance};
 use crate::{balanced_dollar, storage_types};
 use crate::errors::ContractError;
 use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
-use crate::states::{has_administrator, read_administrator, write_administrator};
 use crate::storage_types::{get_upgrade_authority, set_icon_bnusd, set_upgrade_authority, set_xcall, set_xcall_manager, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD
 };
 use soroban_sdk::{
@@ -24,12 +23,10 @@ pub struct BalancedDollar;
 
 #[contractimpl]
 impl BalancedDollar {
-    pub fn initialize(e: Env, admin: Address, xcall: Address, xcall_manager: Address, icon_bnusd: String, upgrade_auth: Address) {
-        if has_administrator(&e) {
+    pub fn initialize(e: Env, xcall: Address, xcall_manager: Address, icon_bnusd: String, upgrade_auth: Address) {
+        if storage_types::has_upgrade_auth(&e) {
             panic_with_error!(e, ContractError::ContractAlreadyInitialized)
         }
-        write_administrator(&e, &admin);
-
         //initialize token properties
         let decimal = 18;
         let name = String::from_str(&e, "Balanced Dollar");
@@ -51,18 +48,6 @@ impl BalancedDollar {
         set_icon_bnusd(&e, icon_bnusd);
         set_xcall_manager(&e, xcall_manager);
         set_upgrade_authority(&e, upgrade_auth);
-    }
-
-    pub fn set_admin(e: Env, new_admin: Address) {
-        let admin = read_administrator(&e);
-        admin.require_auth();
-
-        write_administrator(&e, &new_admin);
-        TokenUtils::new(&e).events().set_admin(admin, new_admin);
-    }
-
-    pub fn get_admin(e: Env) -> Address {
-        read_administrator(&e)
     }
 
     pub fn cross_transfer(
@@ -87,7 +72,7 @@ impl BalancedDollar {
     }
 
     pub fn is_initialized(e: Env) -> bool {
-        has_administrator(&e)
+        storage_types::has_upgrade_auth(&e)
     }
 
     pub fn set_upgrade_authority(e: Env, new_upgrade_authority: Address) {

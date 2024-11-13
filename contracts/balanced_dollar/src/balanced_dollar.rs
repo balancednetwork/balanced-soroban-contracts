@@ -7,7 +7,6 @@ mod xcall {
 
 use crate::contract;
 use crate::errors::ContractError;
-use crate::states::read_administrator;
 use crate::xcall_manager_interface::XcallManagerClient;
 use soroban_rlp::balanced::address_utils::is_valid_bytes_address;
 use soroban_rlp::balanced::messages::{
@@ -143,8 +142,7 @@ pub fn get_address(network_address: String, env: &Env) -> Result<Address, Contra
 
 fn _mint(e: &Env, to: Address, amount: i128) {
     contract::check_nonnegative_amount(amount);
-    let admin: Address = read_administrator(&e);
-
+    let admin = e.current_contract_address();
     receive_balance(e, to.clone(), amount);
     TokenUtils::new(e).events().mint(admin, to, amount);
 }

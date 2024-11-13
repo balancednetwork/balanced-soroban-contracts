@@ -27,7 +27,6 @@ pub struct AllowanceValue {
 pub enum DataKey {
     Allowance(AllowanceDataKey),
     Balance(Address),
-    Admin,
     XcallManager,
     XCall,
     IconBnusd,
@@ -48,6 +47,11 @@ pub fn set_icon_bnusd(e: &Env, value: String) {
 
 pub fn set_upgrade_authority(e: &Env, value: Address) {
     e.storage().instance().set(&DataKey::UpgradeAuthority, &value);
+}
+
+pub fn has_upgrade_auth(e: &Env) -> bool {
+    let key = DataKey::UpgradeAuthority;
+    e.storage().instance().has(&key)
 }
 
 pub fn get_xcall_manager(e: &Env) -> Result<Address, ContractError> {

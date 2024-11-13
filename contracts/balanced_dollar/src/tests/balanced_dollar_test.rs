@@ -8,7 +8,6 @@ use soroban_rlp::balanced::messages::{
     cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert,
 };
 use soroban_sdk::{
-    symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
     Address, Bytes, IntoVal, String, Symbol, Vec,
 };
@@ -22,31 +21,6 @@ fn test_initialize() {
 
     let initialized = client.is_initialized();
     assert_eq!(initialized, true)
-}
-
-#[test]
-fn test_set_admin() {
-    let ctx = TestContext::default();
-    let client = BalancedDollarClient::new(&ctx.env, &ctx.registry);
-    ctx.init_context(&client);
-
-    let new_admin: Address = Address::generate(&ctx.env);
-    client.set_admin(&new_admin);
-    assert_eq!(
-        ctx.env.auths(),
-        std::vec![(
-            ctx.admin.clone(),
-            AuthorizedInvocation {
-                function: AuthorizedFunction::Contract((
-                    ctx.registry.clone(),
-                    symbol_short!("set_admin"),
-                    (&new_admin,).into_val(&ctx.env)
-                )),
-                sub_invocations: std::vec![]
-            }
-        )]
-    );
-    assert_eq!(client.get_admin(), new_admin);
 }
 
 #[test]
