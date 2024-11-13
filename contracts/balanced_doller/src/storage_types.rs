@@ -30,7 +30,6 @@ pub enum DataKey {
     Admin,
     XcallManager,
     XCall,
-    Nid,
     IconBnusd,
     UpgradeAuthority
 }
@@ -41,10 +40,6 @@ pub fn set_xcall_manager(e: &Env, value: Address) {
 
 pub fn set_xcall(e: &Env, value: Address) {
     e.storage().instance().set(&DataKey::XCall, &value);
-}
-
-pub fn set_nid(e: &Env, value: String) {
-    e.storage().instance().set(&DataKey::Nid, &value);
 }
 
 pub fn set_icon_bnusd(e: &Env, value: String) {
@@ -64,13 +59,6 @@ pub fn get_xcall_manager(e: &Env) -> Result<Address, ContractError> {
 
 pub fn get_xcall(e: &Env) -> Result<Address, ContractError> {
     let key = DataKey::XCall;
-    e.storage()
-        .instance()
-        .get(&key)
-        .ok_or(ContractError::Uninitialized)}
-
-pub fn get_nid(e: &Env) -> Result<String, ContractError> {
-    let key = DataKey::Nid;
     e.storage()
         .instance()
         .get(&key)

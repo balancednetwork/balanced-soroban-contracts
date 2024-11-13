@@ -2,11 +2,11 @@
 //! interface.
 use crate::allowance::{read_allowance, spend_allowance, write_allowance};
 use crate::balance::{read_balance, receive_balance, spend_balance};
-use crate::balanced_dollar;
+use crate::{balanced_dollar, storage_types};
 use crate::errors::ContractError;
 use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
 use crate::states::{has_administrator, read_administrator, write_administrator};
-use crate::storage_types::{get_upgrade_authority, set_icon_bnusd, set_nid, set_upgrade_authority, set_xcall, set_xcall_manager, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD
+use crate::storage_types::{get_upgrade_authority, set_icon_bnusd, set_upgrade_authority, set_xcall, set_xcall_manager, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD
 };
 use soroban_sdk::{
     contract, contractimpl, panic_with_error, Address, Bytes, BytesN, Env, String, Vec,
@@ -24,7 +24,7 @@ pub struct BalancedDollar;
 
 #[contractimpl]
 impl BalancedDollar {
-    pub fn initialize(e: Env, admin: Address, xcall: Address, xcall_manager: Address, nid: String, icon_bnusd: String, upgrade_auth: Address) {
+    pub fn initialize(e: Env, admin: Address, xcall: Address, xcall_manager: Address, icon_bnusd: String, upgrade_auth: Address) {
         if has_administrator(&e) {
             panic_with_error!(e, ContractError::ContractAlreadyInitialized)
         }
@@ -49,7 +49,6 @@ impl BalancedDollar {
         );
         set_xcall(&e, xcall);
         set_icon_bnusd(&e, icon_bnusd);
-        set_nid(&e, nid);
         set_xcall_manager(&e, xcall_manager);
         set_upgrade_authority(&e, upgrade_auth);
     }
@@ -158,5 +157,13 @@ impl BalancedDollar {
 
     pub fn symbol(e: Env) -> String {
         read_symbol(&e)
+    }
+
+    pub fn xcall_manager(e: Env) -> Address {
+        storage_types::get_xcall_manager(&e).unwrap()
+    }
+
+    pub fn xcall(e: Env) -> Address {
+        storage_types::get_xcall(&e).unwrap()
     }
 }

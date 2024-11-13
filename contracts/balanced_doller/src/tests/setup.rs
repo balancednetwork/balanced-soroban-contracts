@@ -32,7 +32,6 @@ pub struct TestContext {
     pub xcall_manager: Address,
     pub icon_bn_usd: String,
     pub icon_governance: String,
-    pub token: Address,
     pub centralized_connection: Address,
     pub nid: String,
     pub native_token: Address,
@@ -95,7 +94,7 @@ impl TestContext {
             icon_bn_usd: self.icon_bn_usd.clone(),
             upgrade_authority: self.upgrade_authority.clone(),
         };
-        client.initialize(&self.admin, &config.xcall, &config.xcall_manager, &config.nid, &config.icon_bn_usd, &config.upgrade_authority);
+        client.initialize(&self.admin, &config.xcall, &config.xcall_manager, &config.icon_bn_usd, &config.upgrade_authority);
     }
 
     pub fn init_xcall_manager_context(&self) {
