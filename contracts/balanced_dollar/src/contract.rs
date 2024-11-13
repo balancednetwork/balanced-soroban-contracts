@@ -72,13 +72,13 @@ impl BalancedDollar {
     }
 
     pub fn set_upgrade_authority(e: Env, new_upgrade_authority: Address) {
-        let upgrade_authority = get_upgrade_authority(&e)?;
+        let upgrade_authority = get_upgrade_authority(&e).unwrap();
         upgrade_authority.require_auth();
         set_upgrade_authority(&e, new_upgrade_authority);
     }
 
     pub fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
-        let upgrade_authority = get_upgrade_authority(&e)?;
+        let upgrade_authority = get_upgrade_authority(&e).unwrap();
         upgrade_authority.require_auth();
         e.deployer().update_current_contract_wasm(new_wasm_hash);
     }
@@ -141,10 +141,11 @@ impl BalancedDollar {
     }
 
     pub fn xcall_manager(e: Env) -> Address {
-        storage_types::get_xcall_manager(&e)?
+        storage_types::get_xcall_manager(&e).unwrap()
+
     }
 
     pub fn xcall(e: Env) -> Address {
-        storage_types::get_xcall(&e)?
+        storage_types::get_xcall(&e).unwrap()
     }
 }
