@@ -5,11 +5,13 @@ mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
 }
 use crate::errors::ContractError;
-use crate::states::{self};
-use crate::storage_types::{ConfigData, RateLimit};
+use crate::states::{self, write_xcall};
+use crate::storage_types::{DataKey, TokenData};
 use crate::{
+    config::{self, get_config, set_config, ConfigData},
     states::{
-        extent_ttl, has_upgrade_authority, read_administrator,write_administrator,
+        extent_ttl, has_upgrade_authority, read_administrator, read_token_data, read_tokens,
+        write_administrator,
     },
     storage_types::POINTS,
     xcall_manager_interface::XcallManagerClient,
@@ -44,13 +46,7 @@ impl AssetManager {
     }
 
     pub fn get_config(env: Env) -> ConfigData {
-        ConfigData {
-            xcall: states::read_xcall(&env),
-            xcall_manager: states::read_xcall_manager(&env),
-            native_address: states::read_native_address(&env),
-            icon_asset_manager: states::read_icon_asset_manager(&env),
-            upgrade_authority: states::read_upgrade_authority(&env),
-        }
+        get_config(&env)
     }
 
     pub fn set_admin(env: Env, new_admin: Address) {
@@ -75,6 +71,7 @@ impl AssetManager {
         if percentage > POINTS as u32 {
             return Err(ContractError::PercentageShouldBeLessThanOrEqualToPOINTS);
         }
+
         states::write_period(&env, token_address.clone(), period);
         states::write_percentage(&env, token_address.clone(), percentage);
         states::write_last_update(&env, token_address.clone(), env.ledger().timestamp());
@@ -82,13 +79,13 @@ impl AssetManager {
         Ok(())
     }
 
-    pub fn get_rate_limit(env: Env, token_address: Address) -> RateLimit {
-        RateLimit {
-            period: states::read_period(&env, token_address.clone()),
-            percentage: states::read_percentage(&env, token_address.clone()),
-            last_update: states::read_last_update(&env, token_address.clone()),
-            current_limit: states::read_current_limit(&env, token_address),
-        }
+    pub fn get_rate_limit(env: Env, token_address: Address) -> Result<(u64, u32, u64, u64), ContractError> {
+        Ok((
+            states::read_period(&env, token_address.clone()),
+            states::read_percentage(&env, token_address.clone()),
+            states::read_last_update(&env, token_address.clone()),
+            states::read_current_limit(&env, token_address),
+        ))
     }
 
     pub fn reset_limit(env: Env, token: Address) -> Result<bool, ContractError> {
@@ -341,6 +338,35 @@ impl AssetManager {
         upgrade_authority.require_auth();
 
         states::write_upgrade_authority(&e, new_upgrade_authority);
+    }
+
+    pub fn migrate_db(e: Env) {
+
+        let config = config::get_config(&e);
+        config.upgrade_authority.require_auth();
+
+        states::write_xcall(&e, config.xcall);
+        states::write_xcall_manager(&e, config.xcall_manager);
+        states::write_icon_asset_manager(&e, config.icon_asset_manager);
+        states::write_upgrade_authority(&e, config.upgrade_authority);
+        states::write_native_address(&e, config.native_address);
+
+        let tokens = states::read_tokens(&e);
+        for token in tokens.clone() {
+            let token_data = states::read_token_data(&e, token.clone()).unwrap();
+            states::write_period(&e, token.clone(), token_data.period);
+            states::write_percentage(&e, token.clone(), token_data.percentage);
+            states::write_last_update(&e, token.clone(), token_data.last_update);
+            states::write_current_limit(&e, token.clone(), token_data.current_limit);
+        }
+
+        e.storage().instance().remove(&DataKey::Tokens);
+        for token in tokens {
+            e.storage().instance().remove(&DataKey::TokenData(token));
+        }
+        e.storage().instance().remove(&DataKey::Config);
+        e.storage().instance().remove(&DataKey::Registry);
+        
     }
 
     pub fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {

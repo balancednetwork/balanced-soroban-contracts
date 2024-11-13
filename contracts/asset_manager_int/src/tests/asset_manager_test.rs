@@ -1,9 +1,9 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::{contract::AssetManagerClient, states};
+use crate::{config, contract::AssetManagerClient, storage_types::DataKey};
 use soroban_sdk::{
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    testutils::{storage::Persistent, Address as _, AuthorizedFunction, AuthorizedInvocation},
     token, Address, Bytes, IntoVal, String, Symbol, Vec,
 };
 
@@ -82,7 +82,7 @@ fn test_configure_rate_limit() {
         )]
     );
     let token_data = client.get_rate_limit(&ctx.token);
-    assert_eq!(token_data.last_update, 0);
+    assert_eq!(token_data.3, 0);
 }
 
 #[test]
@@ -464,6 +464,24 @@ fn test_handle_call_message_for_deposit_rollback_panic_with_only_call_service() 
 }
 
 #[test]
+fn test_extend_ttl() {
+    let ctx = TestContext::default();
+    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
+    ctx.init_context(&client);
+
+    client.configure_rate_limit(&ctx.token, &300, &300);
+    let token = ctx.token;
+
+    client.extend_ttl();
+
+    ctx.env.as_contract(&client.address, || {
+        let key = DataKey::TokenData(token.clone());
+        let before_ttl = ctx.env.storage().persistent().get_ttl(&key);
+        std::println!("before ttl is: {:?}", before_ttl);
+    });
+}
+
+#[test]
 fn test_reset_limit() {
     let ctx = TestContext::default();
     let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
@@ -513,7 +531,7 @@ fn test_set_upgrade_authority() {
     );
 
     ctx.env.as_contract(&client.address, || {
-        let upgrade_authority = states::read_upgrade_authority(&ctx.env);
-        assert_eq!(upgrade_authority, new_upgrade_authority)
+        let config = config::get_config(&ctx.env);
+        assert_eq!(config.upgrade_authority, new_upgrade_authority)
     });
 }
