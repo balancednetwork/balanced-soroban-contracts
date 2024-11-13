@@ -24,7 +24,7 @@ pub struct BalancedDollar;
 
 #[contractimpl]
 impl BalancedDollar {
-    pub fn initialize(e: Env, admin: Address, config: ConfigData) {
+    pub fn initialize(e: Env, admin: Address, xcall: Address, xcall_manager: Address, nid: String, icon_bnusd: String, upgrade_auth: Address) {
         if has_administrator(&e) {
             panic_with_error!(e, ContractError::ContractAlreadyInitialized)
         }
