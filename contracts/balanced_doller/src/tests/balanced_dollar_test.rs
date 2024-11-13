@@ -1,7 +1,7 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::{config, contract::BalancedDollarClient};
+use crate::{contract::BalancedDollarClient, storage_types::get_upgrade_authority};
 
 use super::setup::*;
 use soroban_rlp::balanced::messages::{
@@ -398,7 +398,7 @@ fn test_set_upgrade_authority() {
     );
 
     ctx.env.as_contract(&client.address, || {
-        let config = config::get_config(&ctx.env);
-        assert_eq!(config.upgrade_authority, new_upgrade_authority)
+        let upgrade_authority = get_upgrade_authority(&ctx.env).unwrap();
+        assert_eq!(upgrade_authority, new_upgrade_authority)
     });
 }

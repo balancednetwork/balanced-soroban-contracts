@@ -14,5 +14,6 @@ pub enum ContractError {
     InvalidAddress = 8,
     InvalidNetworkAddressLength = 9,
     InvalidNetworkAddress = 10,
-    InvalidAmount = 11
+    InvalidAmount = 11,
+    Uninitialized = 12
 }

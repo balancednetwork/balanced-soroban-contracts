@@ -1,4 +1,5 @@
 use crate::balance::{receive_balance, spend_balance};
+use crate::storage_types::{get_icon_bnusd, get_xcall, get_xcall_manager};
 use soroban_sdk::{xdr::ToXdr, Address, Bytes, Env, String, Vec};
 mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
@@ -7,10 +8,7 @@ mod xcall {
 use crate::contract;
 use crate::errors::ContractError;
 use crate::states::read_administrator;
-use crate::{
-    config::{get_config, set_config, ConfigData},
-    xcall_manager_interface::XcallManagerClient,
-};
+use crate::xcall_manager_interface::XcallManagerClient;
 use soroban_rlp::balanced::address_utils::is_valid_bytes_address;
 use soroban_rlp::balanced::messages::{
     cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert,
@@ -20,9 +18,6 @@ use xcall::{AnyMessage, CallMessageWithRollback, Client, Envelope};
 const CROSS_TRANSFER: &str = "xCrossTransfer";
 const CROSS_TRANSFER_REVERT: &str = "xCrossTransferRevert";
 
-pub fn configure(env: Env, config: ConfigData) {
-    set_config(&env, config);
-}
 
 pub fn _cross_transfer(
     e: Env,
@@ -38,13 +33,12 @@ pub fn _cross_transfer(
     }
     let xcall_message = CrossTransfer::new(from.clone().to_string(), to, amount, data);
     let rollback = CrossTransferRevert::new(from.clone(), amount);
-    let config = get_config(&e);
-    let icon_bn_usd = config.icon_bn_usd;
+    let icon_bn_usd = get_icon_bnusd(&e).unwrap();
 
     let rollback_bytes = rollback.encode(&e, String::from_str(&e, CROSS_TRANSFER_REVERT));
     let message_bytes = xcall_message.encode(&e, String::from_str(&e, CROSS_TRANSFER));
 
-    let (sources, destinations) = xcall_manager_client(&e, &config.xcall_manager).get_protocols();
+    let (sources, destinations) = xcall_manager_client(&e, &get_xcall_manager(&e).unwrap()).get_protocols();
 
     let message = AnyMessage::CallMessageWithRollback(CallMessageWithRollback {
         data: message_bytes,
@@ -57,7 +51,7 @@ pub fn _cross_transfer(
     };
 
     let current_address = e.current_contract_address();
-    xcall_client(&e, &config.xcall).send_call(&from, &current_address, envelope, &icon_bn_usd);
+    xcall_client(&e, &get_xcall(&e).unwrap()).send_call(&from, &current_address, envelope, &icon_bn_usd);
     Ok(())
 }
 
@@ -79,12 +73,11 @@ pub fn _handle_call_message(
     data: Bytes,
     protocols: Vec<String>,
 ) -> Result<(), ContractError> {
-    let config: ConfigData = get_config(&e);
-    let xcall = config.xcall;
+    let xcall = get_xcall(&e).unwrap();
     xcall.require_auth();
 
     let method = CrossTransfer::get_method(&e, data.clone());
-    let icon_bn_usd: String = config.icon_bn_usd;
+    let icon_bn_usd: String = get_icon_bnusd(&e).unwrap();
     if method == String::from_str(&e, &CROSS_TRANSFER) {
         if from != icon_bn_usd {
             return Err(ContractError::OnlyIconBnUSD);
@@ -110,7 +103,7 @@ pub fn _handle_call_message(
     } else {
         return Err(ContractError::UnknownMessageType);
     }
-    verify_protocol(&e, &config.xcall_manager, protocols)?;
+    verify_protocol(&e, &get_xcall_manager(&e).unwrap(), protocols)?;
     Ok(())
 }
 

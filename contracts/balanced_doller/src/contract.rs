@@ -3,11 +3,11 @@
 use crate::allowance::{read_allowance, spend_allowance, write_allowance};
 use crate::balance::{read_balance, receive_balance, spend_balance};
 use crate::balanced_dollar;
-use crate::config::{self, ConfigData};
 use crate::errors::ContractError;
 use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
 use crate::states::{has_administrator, read_administrator, write_administrator};
-use crate::storage_types::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+use crate::storage_types::{get_upgrade_authority, set_icon_bnusd, set_nid, set_upgrade_authority, set_xcall, set_xcall_manager, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD
+};
 use soroban_sdk::{
     contract, contractimpl, panic_with_error, Address, Bytes, BytesN, Env, String, Vec,
 };
@@ -47,7 +47,11 @@ impl BalancedDollar {
                 symbol,
             },
         );
-        balanced_dollar::configure(e, config);
+        set_xcall(&e, xcall);
+        set_icon_bnusd(&e, icon_bnusd);
+        set_nid(&e, nid);
+        set_xcall_manager(&e, xcall_manager);
+        set_upgrade_authority(&e, upgrade_auth);
     }
 
     pub fn set_admin(e: Env, new_admin: Address) {
@@ -87,19 +91,15 @@ impl BalancedDollar {
         has_administrator(&e)
     }
 
-    pub fn set_upgrade_authority(e: Env, upgrade_authority: Address) {
-        let mut config = config::get_config(&e);
-
-        config.upgrade_authority.require_auth();
-
-        config.upgrade_authority = upgrade_authority;
-        config::set_config(&e, config);
+    pub fn set_upgrade_authority(e: Env, new_upgrade_authority: Address) {
+        let upgrade_authority = get_upgrade_authority(&e).unwrap();
+        upgrade_authority.require_auth();
+        set_upgrade_authority(&e, new_upgrade_authority);
     }
 
     pub fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
-        let config = config::get_config(&e);
-        config.upgrade_authority.require_auth();
-
+        let upgrade_authority = get_upgrade_authority(&e).unwrap();
+        upgrade_authority.require_auth();
         e.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 

@@ -1,4 +1,6 @@
-use soroban_sdk::{contracttype, Address};
+use soroban_sdk::{contracttype, Address, Env, String};
+
+use crate::errors::ContractError;
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17280;
 pub(crate) const INSTANCE_BUMP_AMOUNT: u32 = 7 * DAY_IN_LEDGERS;
@@ -22,16 +24,6 @@ pub struct AllowanceValue {
 
 #[derive(Clone)]
 #[contracttype]
-pub struct ConfigData {
-    pub xcall: Address,
-    pub xcall_manager: Address,
-    pub nid: String,
-    pub icon_bn_usd: String,
-    pub upgrade_authority: Address,
-}
-
-#[derive(Clone)]
-#[contracttype]
 pub enum DataKey {
     Allowance(AllowanceDataKey),
     Balance(Address),
@@ -43,51 +35,60 @@ pub enum DataKey {
     UpgradeAuthority
 }
 
-pub fn set_xcall_manager(e: &Env, value: XcallManager) {
+pub fn set_xcall_manager(e: &Env, value: Address) {
     e.storage().instance().set(&DataKey::XcallManager, &value);
 }
 
-pub fn set_xcall(e: &Env, value: Xcall) {
-    e.storage().instance().set(&DataKey::Xcall, &value);
+pub fn set_xcall(e: &Env, value: Address) {
+    e.storage().instance().set(&DataKey::XCall, &value);
 }
 
-pub fn set_nid(e: &Env, value: Nid) {
+pub fn set_nid(e: &Env, value: String) {
     e.storage().instance().set(&DataKey::Nid, &value);
 }
 
-pub fn set_icon_bnusd(e: &Env, value: IconBnusd) {
+pub fn set_icon_bnusd(e: &Env, value: String) {
     e.storage().instance().set(&DataKey::IconBnusd, &value);
 }
 
-pub fn set_upgrade_authority(e: &Env, value: UpgradeAuthority) {
+pub fn set_upgrade_authority(e: &Env, value: Address) {
     e.storage().instance().set(&DataKey::UpgradeAuthority, &value);
 }
 
-
-pub fn get_xcall_manager(e: &Env) -> XcallManager {
+pub fn get_xcall_manager(e: &Env) -> Result<Address, ContractError> {
     let key = DataKey::XcallManager;
-    e.storage().instance().get(&key).unwrap_optimized()
-}
+    e.storage()
+        .instance()
+        .get(&key)
+        .ok_or(ContractError::Uninitialized)}
 
-pub fn get_xcall(e: &Env) -> Xcall {
-    let key = DataKey::Xcall;
-    e.storage().instance().get(&key).unwrap_optimized()
-}
+pub fn get_xcall(e: &Env) -> Result<Address, ContractError> {
+    let key = DataKey::XCall;
+    e.storage()
+        .instance()
+        .get(&key)
+        .ok_or(ContractError::Uninitialized)}
 
-pub fn get_nid(e: &Env) -> Nid {
+pub fn get_nid(e: &Env) -> Result<String, ContractError> {
     let key = DataKey::Nid;
-    e.storage().instance().get(&key).unwrap_optimized()
-}
+    e.storage()
+        .instance()
+        .get(&key)
+        .ok_or(ContractError::Uninitialized)}
 
-pub fn get_icon_bnusd(e: &Env) -> IconBnusd {
+pub fn get_icon_bnusd(e: &Env) -> Result<String, ContractError> {
     let key = DataKey::IconBnusd;
-    e.storage().instance().get(&key).unwrap_optimized()
-}
+    e.storage()
+        .instance()
+        .get(&key)
+        .ok_or(ContractError::Uninitialized)}
 
-pub fn get_upgrade_authority(e: &Env) -> UpgradeAuthority {
+pub fn get_upgrade_authority(e: &Env) -> Result<Address, ContractError> {
     let key = DataKey::UpgradeAuthority;
-    e.storage().instance().get(&key).unwrap_optimized()
-}
+    e.storage()
+        .instance()
+        .get(&key)
+        .ok_or(ContractError::Uninitialized)}
 
 
 

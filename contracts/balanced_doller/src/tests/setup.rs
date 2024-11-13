@@ -3,8 +3,6 @@ extern crate std;
 
 use crate::contract::{BalancedDollar, BalancedDollarClient};
 
-use crate::config::ConfigData;
-
 use soroban_sdk::{testutils::Address as _, token, Address, Env, String, Vec};
 
 mod xcall {
@@ -39,6 +37,14 @@ pub struct TestContext {
     pub nid: String,
     pub native_token: Address,
     pub xcall_client: xcall::Client<'static>,
+}
+
+pub struct ConfigData {
+    pub xcall: Address,
+    pub xcall_manager: Address,
+    pub nid: String,
+    pub icon_bn_usd: String,
+    pub upgrade_authority: Address,
 }
 
 impl TestContext {
@@ -89,7 +95,7 @@ impl TestContext {
             icon_bn_usd: self.icon_bn_usd.clone(),
             upgrade_authority: self.upgrade_authority.clone(),
         };
-        client.initialize(&self.admin, &config);
+        client.initialize(&self.admin, &config.xcall, &config.xcall_manager, &config.nid, &config.icon_bn_usd, &config.upgrade_authority);
     }
 
     pub fn init_xcall_manager_context(&self) {
