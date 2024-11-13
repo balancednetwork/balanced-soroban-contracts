@@ -32,10 +32,6 @@ impl BalancedDollar {
         let name = String::from_str(&e, "Balanced Dollar");
         let symbol = String::from_str(&e, "bnUSD");
 
-        if decimal > u8::MAX.into() {
-            panic_with_error!(e, ContractError::DecimalMustFitInAu8)
-        }
-
         write_metadata(
             &e,
             TokenMetadata {
@@ -76,13 +72,13 @@ impl BalancedDollar {
     }
 
     pub fn set_upgrade_authority(e: Env, new_upgrade_authority: Address) {
-        let upgrade_authority = get_upgrade_authority(&e).unwrap();
+        let upgrade_authority = get_upgrade_authority(&e)?;
         upgrade_authority.require_auth();
         set_upgrade_authority(&e, new_upgrade_authority);
     }
 
     pub fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
-        let upgrade_authority = get_upgrade_authority(&e).unwrap();
+        let upgrade_authority = get_upgrade_authority(&e)?;
         upgrade_authority.require_auth();
         e.deployer().update_current_contract_wasm(new_wasm_hash);
     }
@@ -145,10 +141,10 @@ impl BalancedDollar {
     }
 
     pub fn xcall_manager(e: Env) -> Address {
-        storage_types::get_xcall_manager(&e).unwrap()
+        storage_types::get_xcall_manager(&e)?
     }
 
     pub fn xcall(e: Env) -> Address {
-        storage_types::get_xcall(&e).unwrap()
+        storage_types::get_xcall(&e)?
     }
 }

@@ -32,12 +32,12 @@ pub fn _cross_transfer(
     }
     let xcall_message = CrossTransfer::new(from.clone().to_string(), to, amount, data);
     let rollback = CrossTransferRevert::new(from.clone(), amount);
-    let icon_bn_usd = get_icon_bnusd(&e).unwrap();
+    let icon_bn_usd = get_icon_bnusd(&e)?;
 
     let rollback_bytes = rollback.encode(&e, String::from_str(&e, CROSS_TRANSFER_REVERT));
     let message_bytes = xcall_message.encode(&e, String::from_str(&e, CROSS_TRANSFER));
 
-    let (sources, destinations) = xcall_manager_client(&e, &get_xcall_manager(&e).unwrap()).get_protocols();
+    let (sources, destinations) = xcall_manager_client(&e, &get_xcall_manager(&e)?).get_protocols();
 
     let message = AnyMessage::CallMessageWithRollback(CallMessageWithRollback {
         data: message_bytes,
@@ -50,7 +50,7 @@ pub fn _cross_transfer(
     };
 
     let current_address = e.current_contract_address();
-    xcall_client(&e, &get_xcall(&e).unwrap()).send_call(&from, &current_address, envelope, &icon_bn_usd);
+    xcall_client(&e, &get_xcall(&e)?).send_call(&from, &current_address, envelope, &icon_bn_usd);
     Ok(())
 }
 
@@ -72,11 +72,11 @@ pub fn _handle_call_message(
     data: Bytes,
     protocols: Vec<String>,
 ) -> Result<(), ContractError> {
-    let xcall = get_xcall(&e).unwrap();
+    let xcall = get_xcall(&e)?;
     xcall.require_auth();
 
     let method = CrossTransfer::get_method(&e, data.clone());
-    let icon_bn_usd: String = get_icon_bnusd(&e).unwrap();
+    let icon_bn_usd: String = get_icon_bnusd(&e)?;
     if method == String::from_str(&e, &CROSS_TRANSFER) {
         if from != icon_bn_usd {
             return Err(ContractError::OnlyIconBnUSD);
@@ -102,7 +102,7 @@ pub fn _handle_call_message(
     } else {
         return Err(ContractError::UnknownMessageType);
     }
-    verify_protocol(&e, &get_xcall_manager(&e).unwrap(), protocols)?;
+    verify_protocol(&e, &get_xcall_manager(&e)?, protocols)?;
     Ok(())
 }
 
