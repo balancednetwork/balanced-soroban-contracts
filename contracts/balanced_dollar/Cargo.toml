@@ -12,7 +12,9 @@ testutils = ["soroban-sdk/testutils"]
 [dependencies]
 soroban-sdk =  { workspace = true }
 soroban-token-sdk = { version = "21.6.0" }
-soroban-rlp = { path = "../../libs/soroban-rlp" }
+spoke-token = { path = "../../libs/spoke_token" }
+
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
+soroban-rlp = { path = "../../libs/soroban-rlp" }

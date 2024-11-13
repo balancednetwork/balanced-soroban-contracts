@@ -1,7 +1,7 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::contract::{BalancedDollar, BalancedDollarClient};
+use crate::{BalancedDollar, BalancedDollarClient};
 
 use soroban_sdk::{testutils::Address as _, token, Address, Env, String, Vec};
 
@@ -88,6 +88,8 @@ impl TestContext {
             icon_bn_usd: self.icon_bn_usd.clone(),
             upgrade_authority: self.upgrade_authority.clone(),
         };
+
+        
         client.initialize(&config.xcall, &config.xcall_manager, &config.icon_bn_usd, &config.upgrade_authority);
     }
 

@@ -1,33 +1,76 @@
-use crate::balance::{receive_balance, spend_balance};
-use crate::storage_types::{get_icon_bnusd, get_xcall, get_xcall_manager};
-use soroban_sdk::{xdr::ToXdr, Address, Bytes, Env, String, Vec};
+//! This contract demonstrates a sample implementation of the Soroban token
+//! interface.
+use crate::allowance::{read_allowance, spend_allowance, write_allowance};
+use crate::balance::{read_balance, receive_balance, spend_balance};
+use crate::errors::ContractError;
+use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
+use crate::storage_types::{
+    get_upgrade_authority, set_icon_bnusd, set_upgrade_authority, set_xcall, set_xcall_manager,
+    INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD,
+};
+use soroban_sdk::xdr::ToXdr;
+use soroban_sdk::{panic_with_error, Address, Bytes, BytesN, Env, String, Vec};
+use soroban_token_sdk::metadata::TokenMetadata;
+use soroban_token_sdk::TokenUtils;
+
+use crate::storage_types::{self, get_icon_bnusd, get_xcall, get_xcall_manager};
 mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
 }
 
-use crate::contract;
-use crate::errors::ContractError;
 use crate::xcall_manager_interface::XcallManagerClient;
 use soroban_rlp::balanced::address_utils::is_valid_bytes_address;
 use soroban_rlp::balanced::messages::{
     cross_transfer::CrossTransfer, cross_transfer_revert::CrossTransferRevert,
 };
-use soroban_token_sdk::TokenUtils;
 use xcall::{AnyMessage, CallMessageWithRollback, Client, Envelope};
 const CROSS_TRANSFER: &str = "xCrossTransfer";
 const CROSS_TRANSFER_REVERT: &str = "xCrossTransferRevert";
+pub fn check_nonnegative_amount(amount: i128) {
+    if amount < 0 {
+        panic!("negative amount is not allowed: {}", amount)
+    }
+}
+pub fn _initialize(
+    e: Env,
+    xcall: Address,
+    xcall_manager: Address,
+    icon_bnusd: String,
+    upgrade_auth: Address,
+    name: String,
+    symbol: String,
+    decimal: u32,
+) {
+    if storage_types::has_upgrade_auth(&e) {
+        panic_with_error!(e, ContractError::ContractAlreadyInitialized)
+    }
 
+    write_metadata(
+        &e,
+        TokenMetadata {
+            decimal,
+            name,
+            symbol,
+        },
+    );
+    set_xcall(&e, xcall);
+    set_icon_bnusd(&e, icon_bnusd);
+    set_xcall_manager(&e, xcall_manager);
+    set_upgrade_authority(&e, upgrade_auth);
+}
 
 pub fn _cross_transfer(
     e: Env,
     from: Address,
     amount: u128,
     to: String,
-    data: Bytes,
+    data: Option<Bytes>,
 ) -> Result<(), ContractError> {
+    from.require_auth();
+    let data = data.unwrap_or(Bytes::from_array(&e, &[0u8; 32]));
     if amount <= i128::MAX as u128 {
         _burn(&e, from.clone(), amount as i128);
-    }else{
+    } else {
         return Err(ContractError::InvalidAmount);
     }
     let xcall_message = CrossTransfer::new(from.clone().to_string(), to, amount, data);
@@ -85,7 +128,7 @@ pub fn _handle_call_message(
         let to_network_address: Address = get_address(message.to, &e)?;
         if message.amount <= i128::MAX as u128 {
             _mint(&e, to_network_address, message.amount as i128);
-        }else{
+        } else {
             return Err(ContractError::InvalidAmount);
         }
     } else if method == String::from_str(&e, &CROSS_TRANSFER_REVERT) {
@@ -96,7 +139,7 @@ pub fn _handle_call_message(
         let message = CrossTransferRevert::decode(&e, data);
         if message.amount <= i128::MAX as u128 {
             _mint(&e, message.to, message.amount as i128);
-        }else{
+        } else {
             return Err(ContractError::InvalidAmount);
         }
     } else {
@@ -104,6 +147,67 @@ pub fn _handle_call_message(
     }
     verify_protocol(&e, &get_xcall_manager(&e)?, protocols)?;
     Ok(())
+}
+
+pub fn _is_initialized(e: Env) -> bool {
+    storage_types::has_upgrade_auth(&e)
+}
+
+pub fn _set_upgrade_authority(e: Env, new_upgrade_authority: Address) {
+    let upgrade_authority = get_upgrade_authority(&e).unwrap();
+    upgrade_authority.require_auth();
+    set_upgrade_authority(&e, new_upgrade_authority);
+}
+
+pub fn _upgrade(e: Env, new_wasm_hash: BytesN<32>) {
+    let upgrade_authority = get_upgrade_authority(&e).unwrap();
+    upgrade_authority.require_auth();
+    e.deployer().update_current_contract_wasm(new_wasm_hash);
+}
+
+pub fn _extend_ttl(e: Env) {
+    e.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+}
+
+pub fn _allowance(e: Env, from: Address, spender: Address) -> i128 {
+    read_allowance(&e, from, spender).amount
+}
+
+pub fn _approve(e: Env, from: Address, spender: Address, amount: i128, expiration_ledger: u32) {
+    from.require_auth();
+
+    check_nonnegative_amount(amount);
+
+    write_allowance(&e, from.clone(), spender.clone(), amount, expiration_ledger);
+    TokenUtils::new(&e)
+        .events()
+        .approve(from, spender, amount, expiration_ledger);
+}
+
+pub fn _balance(e: Env, id: Address) -> i128 {
+    read_balance(&e, id)
+}
+
+pub fn _transfer(e: Env, from: Address, to: Address, amount: i128) {
+    from.require_auth();
+
+    check_nonnegative_amount(amount);
+    spend_balance(&e, from.clone(), amount);
+    receive_balance(&e, to.clone(), amount);
+    TokenUtils::new(&e).events().transfer(from, to, amount);
+}
+
+pub fn _transfer_from(e: Env, spender: Address, from: Address, to: Address, amount: i128) {
+    spender.require_auth();
+
+    check_nonnegative_amount(amount);
+
+    spend_allowance(&e, from.clone(), spender, amount);
+    spend_balance(&e, from.clone(), amount);
+    receive_balance(&e, to.clone(), amount);
+    TokenUtils::new(&e).events().transfer(from, to, amount)
 }
 
 pub fn get_address(network_address: String, env: &Env) -> Result<Address, ContractError> {
@@ -141,14 +245,14 @@ pub fn get_address(network_address: String, env: &Env) -> Result<Address, Contra
 }
 
 fn _mint(e: &Env, to: Address, amount: i128) {
-    contract::check_nonnegative_amount(amount);
+    check_nonnegative_amount(amount);
     let admin = e.current_contract_address();
     receive_balance(e, to.clone(), amount);
     TokenUtils::new(e).events().mint(admin, to, amount);
 }
 
 pub fn _burn(e: &Env, from: Address, amount: i128) {
-    contract::check_nonnegative_amount(amount);
+    check_nonnegative_amount(amount);
 
     spend_balance(e, from.clone(), amount);
     TokenUtils::new(e).events().burn(from, amount);
@@ -161,4 +265,24 @@ fn xcall_client(e: &Env, xcall: &Address) -> Client<'static> {
 fn xcall_manager_client(e: &Env, xcall_manager: &Address) -> XcallManagerClient<'static> {
     let client = XcallManagerClient::new(e, xcall_manager);
     return client;
+}
+
+pub fn _decimals(e: Env) -> u32 {
+    read_decimal(&e)
+}
+
+pub fn _name(e: Env) -> String {
+    read_name(&e)
+}
+
+pub fn _symbol(e: Env) -> String {
+    read_symbol(&e)
+}
+
+pub fn _xcall_manager(e: Env) -> Address {
+    storage_types::get_xcall_manager(&e).unwrap()
+}
+
+pub fn _xcall(e: Env) -> Address {
+    storage_types::get_xcall(&e).unwrap()
 }

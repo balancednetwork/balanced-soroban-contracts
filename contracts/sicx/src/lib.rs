@@ -1,20 +1,21 @@
 #![no_std]
-mod tests;
+
 use soroban_sdk::{
     contract, contractimpl, Address, Bytes, BytesN, Env, String, Vec,
 };
 use spoke_token::{token_lib, errors::ContractError};
 
 #[contract]
-pub struct BalancedDollar;
+pub struct StakedICX;
 
 #[contractimpl]
-impl BalancedDollar {
+impl StakedICX {
     pub fn initialize(e: Env, xcall: Address, xcall_manager: Address, icon_bnusd: String, upgrade_auth: Address) {
       
+        //initialize token properties
         let decimal = 18;
-        let name = String::from_str(&e, "Balanced Dollar");
-        let symbol = String::from_str(&e, "bnUSD");
+        let name = String::from_str(&e, "Staked ICX");
+        let symbol = String::from_str(&e, "SICX");
 
         token_lib::_initialize(e.clone(), xcall, xcall_manager, icon_bnusd, upgrade_auth, name, symbol, decimal);
     }

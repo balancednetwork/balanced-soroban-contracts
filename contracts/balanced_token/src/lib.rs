@@ -1,22 +1,9 @@
 #![no_std]
 
-use crate::allowance::{read_allowance, spend_allowance, write_allowance};
-use crate::balance::{read_balance, receive_balance, spend_balance};
-use crate::{balanced_dollar, storage_types};
-use crate::errors::ContractError;
-use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
-use crate::storage_types::{get_upgrade_authority, set_icon_bnusd, set_upgrade_authority, set_xcall, set_xcall_manager, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD
-};
 use soroban_sdk::{
-    contract, contractimpl, panic_with_error, Address, Bytes, BytesN, Env, String, Vec,
+    contract, contractimpl, Address, Bytes, BytesN, Env, String, Vec,
 };
-use soroban_token_sdk::metadata::TokenMetadata;
-use soroban_token_sdk::TokenUtils;
-pub fn check_nonnegative_amount(amount: i128) {
-    if amount < 0 {
-        panic!("negative amount is not allowed: {}", amount)
-    }
-}
+use spoke_token::{token_lib, errors::ContractError};
 
 #[contract]
 pub struct BalancedToken;
@@ -26,9 +13,11 @@ impl BalancedToken {
     pub fn initialize(e: Env, xcall: Address, xcall_manager: Address, icon_bnusd: String, upgrade_auth: Address) {
       
         //initialize token properties
-        let decimal: u8 = 18;
+        let decimal = 18;
         let name = String::from_str(&e, "Balanced Token");
         let symbol = String::from_str(&e, "BALN");
+
+        token_lib::_initialize(e.clone(), xcall, xcall_manager, icon_bnusd, upgrade_auth, name, symbol, decimal);
     }
 
     pub fn cross_transfer(
@@ -38,9 +27,7 @@ impl BalancedToken {
         to: String,
         data: Option<Bytes>,
     ) -> Result<(), ContractError> {
-        from.require_auth();
-        let transfer_data = data.unwrap_or(Bytes::from_array(&e, &[0u8; 32]));
-        return token_lib::_cross_transfer(e.clone(), from, amount, to, transfer_data);
+        token_lib::_cross_transfer(e, from, amount, to, data)
     }
 
     pub fn handle_call_message(
@@ -49,87 +36,62 @@ impl BalancedToken {
         data: Bytes,
         protocols: Vec<String>,
     ) -> Result<(), ContractError> {
-        return token_lib::_handle_call_message(e, from, data, protocols);
+        token_lib::_handle_call_message(e, from, data, protocols)
     }
 
     pub fn is_initialized(e: Env) -> bool {
-        storage_types::has_upgrade_auth(&e)
+        token_lib::_is_initialized(e)
     }
 
     pub fn set_upgrade_authority(e: Env, new_upgrade_authority: Address) {
-        let upgrade_authority = get_upgrade_authority(&e)?;
-        upgrade_authority.require_auth();
-        set_upgrade_authority(&e, new_upgrade_authority);
+        token_lib::_set_upgrade_authority(e, new_upgrade_authority);
     }
 
     pub fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
-        let upgrade_authority = get_upgrade_authority(&e)?;
-        upgrade_authority.require_auth();
-        e.deployer().update_current_contract_wasm(new_wasm_hash);
+        token_lib::_upgrade(e, new_wasm_hash);
     }
 
     pub fn extend_ttl(e: Env) {
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        token_lib::_extend_ttl(e);
     }
 
     pub fn allowance(e: Env, from: Address, spender: Address) -> i128 {
-        read_allowance(&e, from, spender).amount
+        token_lib::_allowance(e, from, spender)
     }
 
     pub fn approve(e: Env, from: Address, spender: Address, amount: i128, expiration_ledger: u32) {
-        from.require_auth();
-
-        check_nonnegative_amount(amount);
-
-        write_allowance(&e, from.clone(), spender.clone(), amount, expiration_ledger);
-        TokenUtils::new(&e)
-            .events()
-            .approve(from, spender, amount, expiration_ledger);
+        token_lib::_approve(e, from, spender, amount, expiration_ledger);
     }
 
     pub fn balance(e: Env, id: Address) -> i128 {
-        read_balance(&e, id)
+        token_lib::_balance(e, id)
     }
 
     pub fn transfer(e: Env, from: Address, to: Address, amount: i128) {
-        from.require_auth();
-
-        check_nonnegative_amount(amount);
-        spend_balance(&e, from.clone(), amount);
-        receive_balance(&e, to.clone(), amount);
-        TokenUtils::new(&e).events().transfer(from, to, amount);
+        token_lib::_transfer(e, from, to, amount);
     }
 
     pub fn transfer_from(e: Env, spender: Address, from: Address, to: Address, amount: i128) {
-        spender.require_auth();
-
-        check_nonnegative_amount(amount);
-
-        spend_allowance(&e, from.clone(), spender, amount);
-        spend_balance(&e, from.clone(), amount);
-        receive_balance(&e, to.clone(), amount);
-        TokenUtils::new(&e).events().transfer(from, to, amount)
+        token_lib::_transfer_from(e, spender, from, to, amount);
     }
 
     pub fn decimals(e: Env) -> u32 {
-        read_decimal(&e)
+        token_lib::_decimals(e)
     }
 
     pub fn name(e: Env) -> String {
-        read_name(&e)
+        token_lib::_name(e)
     }
 
     pub fn symbol(e: Env) -> String {
-        read_symbol(&e)
+        token_lib::_symbol(e)
     }
 
     pub fn xcall_manager(e: Env) -> Address {
-        storage_types::get_xcall_manager(&e)?
+        token_lib::_xcall_manager(e)
     }
 
     pub fn xcall(e: Env) -> Address {
-        storage_types::get_xcall(&e)?
+        token_lib::_xcall(e)
     }
 }

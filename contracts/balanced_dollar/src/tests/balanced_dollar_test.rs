@@ -1,7 +1,8 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::{contract::BalancedDollarClient, storage_types::get_upgrade_authority};
+use crate::BalancedDollarClient;
+use spoke_token::storage_types::get_upgrade_authority;
 
 use super::setup::*;
 use soroban_rlp::balanced::messages::{

@@ -3,9 +3,7 @@
 mod allowance;
 mod balance;
 pub mod token_lib;
-pub mod contract;
-mod errors;
+pub mod errors;
 mod metadata;
-mod storage_types;
-mod tests;
+pub mod storage_types;
 mod xcall_manager_interface;
