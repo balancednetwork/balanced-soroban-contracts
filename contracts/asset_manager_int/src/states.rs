@@ -1,6 +1,6 @@
-use soroban_sdk::{Address, Env, String};
+use soroban_sdk::{Address, Env, String, Vec};
 
-use crate::storage_types::DataKey;
+use crate::{errors::ContractError, storage_types::{DataKey, TokenData}};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17280;
 pub(crate) const INSTANCE_BUMP_AMOUNT: u32 = 30 * DAY_IN_LEDGERS;
@@ -116,8 +116,55 @@ pub fn read_current_limit(env: &Env, token_address: Address) -> u64 {
     env.storage().instance().get(&key).unwrap()
 }
 
+pub fn read_token_data(env: &Env, token_address: Address) -> Result<TokenData, ContractError> {
+    let key = DataKey::TokenData(token_address);
+    let token_data: TokenData = env
+        .storage()
+        .persistent()
+        .get(&key)
+        .ok_or(ContractError::TokenDoesNotExists)?;
+    Ok(token_data)
+}
+
+pub fn write_tokens(e: &Env, token: Address) {
+    let key = DataKey::Tokens;
+    let mut tokens: Vec<Address> = match e.storage().persistent().get(&key) {
+        Some(names) => names,
+        None => Vec::new(&e),
+    };
+
+    tokens.push_back(token);
+    e.storage().persistent().set(&key, &tokens);
+}
+
+pub fn read_tokens(e: &Env) -> Vec<Address> {
+    let key = DataKey::Tokens;
+    let tokens: Vec<Address> = match e.storage().persistent().get(&key) {
+        Some(names) => names,
+        None => Vec::new(&e),
+    };
+
+    tokens
+}
+
 pub fn extent_ttl(e: &Env) {
     e.storage()
         .instance()
         .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+    let tokens = read_tokens(&e);
+    e.storage().persistent().extend_ttl(
+        &DataKey::Tokens,
+        INSTANCE_LIFETIME_THRESHOLD,
+        INSTANCE_BUMP_AMOUNT,
+    );
+    for token in tokens {
+
+        e.storage().persistent().extend_ttl(
+            &DataKey::TokenData(token.clone()),
+            INSTANCE_LIFETIME_THRESHOLD,
+            INSTANCE_BUMP_AMOUNT,
+        );
+
+    }
 }

@@ -3,6 +3,8 @@ extern crate std;
 
 use crate::contract::{AssetManager, AssetManagerClient};
 
+use crate::config::ConfigData;
+
 use soroban_sdk::Vec;
 use soroban_sdk::{testutils::Address as _, token, Address, Env, String};
 
@@ -38,14 +40,6 @@ pub struct TestContext {
     pub nid: String,
     pub native_token: Address,
     pub xcall_client: xcall::Client<'static>,
-}
-
-pub struct ConfigData {
-    pub xcall: Address,
-    pub xcall_manager: Address,
-    pub native_address: Address,
-    pub icon_asset_manager: String,
-    pub upgrade_authority: Address,
 }
 
 impl TestContext {
