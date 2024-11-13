@@ -6,6 +6,7 @@ mod xcall {
 }
 use crate::errors::ContractError;
 use crate::states::{self};
+use crate::storage_types::{ConfigData, RateLimit};
 use crate::{
     states::{
         extent_ttl, has_upgrade_authority, read_administrator,write_administrator,
@@ -42,14 +43,14 @@ impl AssetManager {
         Ok(())
     }
 
-    pub fn get_config(env: Env) -> (Address, Address, Address, String, Address) {
-        (
-            states::read_xcall(&env),
-            states::read_xcall_manager(&env),
-            states::read_native_address(&env),
-            states::read_icon_asset_manager(&env),
-            states::read_upgrade_authority(&env),
-        )
+    pub fn get_config(env: Env) -> ConfigData {
+        ConfigData {
+            xcall: states::read_xcall(&env),
+            xcall_manager: states::read_xcall_manager(&env),
+            native_address: states::read_native_address(&env),
+            icon_asset_manager: states::read_icon_asset_manager(&env),
+            upgrade_authority: states::read_upgrade_authority(&env),
+        }
     }
 
     pub fn set_admin(env: Env, new_admin: Address) {
@@ -81,13 +82,13 @@ impl AssetManager {
         Ok(())
     }
 
-    pub fn get_rate_limit(env: Env, token_address: Address) -> Result<(u64, u32, u64, u64), ContractError> {
-        Ok((
-            states::read_period(&env, token_address.clone()),
-            states::read_percentage(&env, token_address.clone()),
-            states::read_last_update(&env, token_address.clone()),
-            states::read_current_limit(&env, token_address),
-        ))
+    pub fn get_rate_limit(env: Env, token_address: Address) -> RateLimit {
+        RateLimit {
+            period: states::read_period(&env, token_address.clone()),
+            percentage: states::read_percentage(&env, token_address.clone()),
+            last_update: states::read_last_update(&env, token_address.clone()),
+            current_limit: states::read_current_limit(&env, token_address),
+        }
     }
 
     pub fn reset_limit(env: Env, token: Address) -> Result<bool, ContractError> {

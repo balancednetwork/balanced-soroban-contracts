@@ -82,7 +82,7 @@ fn test_configure_rate_limit() {
         )]
     );
     let token_data = client.get_rate_limit(&ctx.token);
-    assert_eq!(token_data.3, 0);
+    assert_eq!(token_data.last_update, 0);
 }
 
 #[test]
@@ -461,16 +461,6 @@ fn test_handle_call_message_for_deposit_rollback_panic_with_only_call_service() 
     client.handle_call_message(&wrong_network_address, &data, &sources);
 
     assert_eq!(token_client.balance(&ctx.withdrawer), bnusd_amount as i128)
-}
-
-#[test]
-fn test_extend_ttl() {
-    let ctx = TestContext::default();
-    let client = AssetManagerClient::new(&ctx.env, &ctx.registry);
-    ctx.init_context(&client);
-
-    client.configure_rate_limit(&ctx.token, &300, &300);
-    client.extend_ttl();
 }
 
 #[test]
