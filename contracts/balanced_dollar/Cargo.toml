@@ -18,3 +18,4 @@ spoke-token = { path = "../../libs/spoke_token" }
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
 soroban-rlp = { path = "../../libs/soroban-rlp" }
+

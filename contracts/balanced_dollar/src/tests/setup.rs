@@ -89,7 +89,6 @@ impl TestContext {
             upgrade_authority: self.upgrade_authority.clone(),
         };
 
-        
         client.initialize(&config.xcall, &config.xcall_manager, &config.icon_bn_usd, &config.upgrade_authority);
     }
 
