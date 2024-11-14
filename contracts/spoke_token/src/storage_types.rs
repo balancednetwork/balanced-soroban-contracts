@@ -29,7 +29,7 @@ pub enum DataKey {
     Balance(Address),
     XcallManager,
     XCall,
-    IconBnusd,
+    HubToken,
     UpgradeAuthority
 }
 
@@ -41,8 +41,8 @@ pub fn set_xcall(e: &Env, value: Address) {
     e.storage().instance().set(&DataKey::XCall, &value);
 }
 
-pub fn set_icon_bnusd(e: &Env, value: String) {
-    e.storage().instance().set(&DataKey::IconBnusd, &value);
+pub fn set_icon_hub_token(e: &Env, value: String) {
+    e.storage().instance().set(&DataKey::HubToken, &value);
 }
 
 pub fn set_upgrade_authority(e: &Env, value: Address) {
@@ -68,8 +68,8 @@ pub fn get_xcall(e: &Env) -> Result<Address, ContractError> {
         .get(&key)
         .ok_or(ContractError::Uninitialized)}
 
-pub fn get_icon_bnusd(e: &Env) -> Result<String, ContractError> {
-    let key = DataKey::IconBnusd;
+pub fn get_icon_hub_token(e: &Env) -> Result<String, ContractError> {
+    let key = DataKey::HubToken;
     e.storage()
         .instance()
         .get(&key)

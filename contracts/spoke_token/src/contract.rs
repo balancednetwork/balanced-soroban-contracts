@@ -2,10 +2,10 @@
 //! interface.
 use crate::allowance::{read_allowance, spend_allowance, write_allowance};
 use crate::balance::{read_balance, receive_balance, spend_balance};
-use crate::{balanced_dollar, storage_types};
+use crate::{spoke_token, storage_types};
 use crate::errors::ContractError;
 use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
-use crate::storage_types::{get_upgrade_authority, set_icon_bnusd, set_upgrade_authority, set_xcall, set_xcall_manager, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD
+use crate::storage_types::{get_upgrade_authority, set_icon_hub_token, set_upgrade_authority, set_xcall, set_xcall_manager, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD
 };
 use soroban_sdk::{
     contract, contractimpl, panic_with_error, Address, Bytes, BytesN, Env, String, Vec,
@@ -23,14 +23,10 @@ pub struct BalancedDollar;
 
 #[contractimpl]
 impl BalancedDollar {
-    pub fn initialize(e: Env, xcall: Address, xcall_manager: Address, icon_bnusd: String, upgrade_auth: Address) {
+    pub fn initialize(e: Env, xcall: Address, xcall_manager: Address, hub_token: String, upgrade_auth: Address, name: String, symbol: String, decimal: u32) {
         if storage_types::has_upgrade_auth(&e) {
             panic_with_error!(e, ContractError::ContractAlreadyInitialized)
         }
-        //initialize token properties
-        let decimal = 18;
-        let name = String::from_str(&e, "Balanced Dollar");
-        let symbol = String::from_str(&e, "bnUSD");
 
         write_metadata(
             &e,
@@ -41,7 +37,7 @@ impl BalancedDollar {
             },
         );
         set_xcall(&e, xcall);
-        set_icon_bnusd(&e, icon_bnusd);
+        set_icon_hub_token(&e, hub_token);
         set_xcall_manager(&e, xcall_manager);
         set_upgrade_authority(&e, upgrade_auth);
     }
@@ -55,7 +51,7 @@ impl BalancedDollar {
     ) -> Result<(), ContractError> {
         from.require_auth();
         let transfer_data = data.unwrap_or(Bytes::from_array(&e, &[0u8; 32]));
-        return balanced_dollar::_cross_transfer(e.clone(), from, amount, to, transfer_data);
+        return spoke_token::_cross_transfer(e.clone(), from, amount, to, transfer_data);
     }
 
     pub fn handle_call_message(
@@ -64,7 +60,7 @@ impl BalancedDollar {
         data: Bytes,
         protocols: Vec<String>,
     ) -> Result<(), ContractError> {
-        return balanced_dollar::_handle_call_message(e, from, data, protocols);
+        return spoke_token::_handle_call_message(e, from, data, protocols);
     }
 
     pub fn is_initialized(e: Env) -> bool {

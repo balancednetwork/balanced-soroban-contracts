@@ -2,7 +2,7 @@
 
 mod allowance;
 mod balance;
-pub mod balanced_dollar;
+pub mod spoke_token;
 pub mod contract;
 mod errors;
 mod metadata;
