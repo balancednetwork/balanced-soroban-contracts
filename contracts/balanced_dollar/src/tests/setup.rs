@@ -3,8 +3,6 @@ extern crate std;
 
 use crate::contract::{BalancedDollar, BalancedDollarClient};
 
-use crate::config::ConfigData;
-
 use soroban_sdk::{testutils::Address as _, token, Address, Env, String, Vec};
 
 mod xcall {
@@ -34,20 +32,23 @@ pub struct TestContext {
     pub xcall_manager: Address,
     pub icon_bn_usd: String,
     pub icon_governance: String,
-    pub token: Address,
     pub centralized_connection: Address,
     pub nid: String,
     pub native_token: Address,
     pub xcall_client: xcall::Client<'static>,
 }
 
+pub struct ConfigData {
+    pub xcall: Address,
+    pub xcall_manager: Address,
+    pub icon_bn_usd: String,
+    pub upgrade_authority: Address,
+}
+
 impl TestContext {
     pub fn default() -> Self {
         let env = Env::default();
         let token_admin = Address::generate(&env);
-        let token = env
-            .register_stellar_asset_contract_v2(token_admin.clone())
-            .address();
         let balanced_dollar = env.register_contract(None, BalancedDollar);
         let centralized_connection = env.register_contract_wasm(None, connection::WASM);
         let xcall_manager = env.register_contract_wasm(None, xcall_manager::WASM);
@@ -67,7 +68,6 @@ impl TestContext {
             xcall_manager,
             icon_bn_usd: String::from_str(&env, "icon01/hxjnfh4u"),
             icon_governance: String::from_str(&env, "icon01/kjdnoi"),
-            token,
             centralized_connection,
             nid: String::from_str(&env, "stellar"),
             native_token: env
@@ -85,11 +85,10 @@ impl TestContext {
         let config = ConfigData {
             xcall: self.xcall.clone(),
             xcall_manager: self.xcall_manager.clone(),
-            nid: self.nid.clone(),
             icon_bn_usd: self.icon_bn_usd.clone(),
             upgrade_authority: self.upgrade_authority.clone(),
         };
-        client.initialize(&self.admin, &config);
+        client.initialize(&config.xcall, &config.xcall_manager, &config.icon_bn_usd, &config.upgrade_authority);
     }
 
     pub fn init_xcall_manager_context(&self) {
