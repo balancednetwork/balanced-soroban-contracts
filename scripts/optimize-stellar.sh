@@ -10,7 +10,7 @@ cargo build --target wasm32-unknown-unknown --release
 for WASM in $build_directory/*.wasm; do
   NAME=$(basename "$WASM" .wasm)${SUFFIX}.wasm
   echo "Optimizing $NAME ... $WASM"
-  /usr/local/bin/stellar contract optimize --wasm "$WASM"
+  stellar contract optimize --wasm "$WASM"
 done
 
 for WASM in $build_directory/*.optimized.wasm; do
