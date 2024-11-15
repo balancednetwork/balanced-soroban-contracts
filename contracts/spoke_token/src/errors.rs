@@ -8,7 +8,7 @@ pub enum ContractError {
     ContractAlreadyInitialized = 2,
     DecimalMustFitInAu8 = 3,
     ProtocolMismatch = 4,
-    OnlyIconBnUSD = 5,
+    OnlyIconHubToken = 5,
     OnlyCallService = 6,
     UnknownMessageType = 7,
     InvalidAddress = 8,

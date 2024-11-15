@@ -88,7 +88,11 @@ impl TestContext {
             icon_bn_usd: self.icon_bn_usd.clone(),
             upgrade_authority: self.upgrade_authority.clone(),
         };
-        client.initialize(&config.xcall, &config.xcall_manager, &config.icon_bn_usd, &config.upgrade_authority);
+                //initialize token properties
+        let decimal = 18;
+        let name = String::from_str(&self.env, "Balanced Dollar");
+        let symbol = String::from_str(&self.env, "bnUSD");
+        client.initialize(&config.xcall, &config.xcall_manager, &config.icon_bn_usd, &config.upgrade_authority, &name, &symbol, &decimal);
     }
 
     pub fn init_xcall_manager_context(&self) {

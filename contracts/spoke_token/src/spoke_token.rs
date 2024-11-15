@@ -1,5 +1,5 @@
 use crate::balance::{receive_balance, spend_balance};
-use crate::storage_types::{get_icon_bnusd, get_xcall, get_xcall_manager};
+use crate::storage_types::{get_icon_hub_token, get_xcall, get_xcall_manager};
 use soroban_sdk::{xdr::ToXdr, Address, Bytes, Env, String, Vec};
 mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
@@ -32,7 +32,7 @@ pub fn _cross_transfer(
     }
     let xcall_message = CrossTransfer::new(from.clone().to_string(), to, amount, data);
     let rollback = CrossTransferRevert::new(from.clone(), amount);
-    let icon_bn_usd = get_icon_bnusd(&e)?;
+    let icon_bn_usd = get_icon_hub_token(&e)?;
 
     let rollback_bytes = rollback.encode(&e, String::from_str(&e, CROSS_TRANSFER_REVERT));
     let message_bytes = xcall_message.encode(&e, String::from_str(&e, CROSS_TRANSFER));
@@ -76,10 +76,10 @@ pub fn _handle_call_message(
     xcall.require_auth();
 
     let method = CrossTransfer::get_method(&e, data.clone());
-    let icon_bn_usd: String = get_icon_bnusd(&e)?;
+    let icon_bn_usd: String = get_icon_hub_token(&e)?;
     if method == String::from_str(&e, &CROSS_TRANSFER) {
         if from != icon_bn_usd {
-            return Err(ContractError::OnlyIconBnUSD);
+            return Err(ContractError::OnlyIconHubToken);
         }
         let message = CrossTransfer::decode(&e, data);
         let to_network_address: Address = get_address(message.to, &e)?;
