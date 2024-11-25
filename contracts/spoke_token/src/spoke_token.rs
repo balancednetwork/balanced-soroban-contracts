@@ -1,5 +1,5 @@
 use crate::balance::{receive_balance, spend_balance};
-use crate::storage_types::{get_icon_hub_token, get_xcall, get_xcall_manager};
+use crate::storage_types::{get_icon_hub_token, get_xcall, get_xcall_manager, get_xcall_network_address};
 use soroban_sdk::{xdr::ToXdr, Address, Bytes, Env, String, Vec};
 mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
@@ -89,7 +89,7 @@ pub fn _handle_call_message(
             return Err(ContractError::InvalidAmount);
         }
     } else if method == String::from_str(&e, &CROSS_TRANSFER_REVERT) {
-        let xcall_network_address = xcall_client(&e, &xcall).get_network_address();
+        let xcall_network_address = get_xcall_network_address(&e)?;
         if xcall_network_address != from {
             return Err(ContractError::OnlyCallService);
         }
@@ -154,7 +154,7 @@ pub fn _burn(e: &Env, from: Address, amount: i128) {
     TokenUtils::new(e).events().burn(from, amount);
 }
 
-fn xcall_client(e: &Env, xcall: &Address) -> Client<'static> {
+pub fn xcall_client(e: &Env, xcall: &Address) -> Client<'static> {
     return xcall::Client::new(e, xcall);
 }
 

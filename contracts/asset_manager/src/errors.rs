@@ -18,5 +18,6 @@ pub enum ContractError {
     TokenExists = 12,
     InvalidAddress = 13,
     TokenDoesNotExists = 14,
-    InvalidAmount = 15
+    InvalidAmount = 15,
+    Uninitialized = 16
 }
