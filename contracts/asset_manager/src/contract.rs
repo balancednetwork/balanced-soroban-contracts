@@ -5,6 +5,7 @@ mod xcall {
     soroban_sdk::contractimport!(file = "../../wasm/xcall.wasm");
 }
 use crate::errors::ContractError;
+use crate::states::{get_xcall_network_address, set_xcall_network_address};
 use crate::storage_types::TokenData;
 use crate::{
     config::{self, get_config, set_config, ConfigData},
@@ -37,7 +38,8 @@ impl AssetManager {
         }
         write_registry(&env, &registry);
         write_administrator(&env, &admin);
-        Self::configure(env, config);
+        Self::configure(env.clone(), config.clone());
+        set_xcall_network_address(&env, Self::xcall_client(&env, &config.xcall).get_network_address());
         Ok(())
     }
 
@@ -104,6 +106,11 @@ impl AssetManager {
             data.last_update,
             data.current_limit,
         ))
+    }
+
+    pub fn set_xcall_network_address(env: Env) {
+        let xcall = get_config(&env).xcall;
+        set_xcall_network_address(&env, Self::xcall_client(&env, &xcall).get_network_address());
     }
 
     pub fn reset_limit(env: Env, token: Address) -> Result<bool, ContractError> {
@@ -289,7 +296,7 @@ impl AssetManager {
                 message.amount,
             )?;
         } else if method == String::from_str(&e, &DEPOSIT_REVERT_NAME) {
-            let xcall_network_address = Self::xcall_client(&e, &xcall).get_network_address();
+            let xcall_network_address = get_xcall_network_address(&e).unwrap();
             if xcall_network_address != from {
                 return Err(ContractError::OnlyCallService);
             }

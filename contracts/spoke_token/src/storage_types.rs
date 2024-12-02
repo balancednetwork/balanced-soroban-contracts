@@ -30,7 +30,8 @@ pub enum DataKey {
     XcallManager,
     XCall,
     HubToken,
-    UpgradeAuthority
+    UpgradeAuthority,
+    XCallNetworkAddress,
 }
 
 pub fn set_xcall_manager(e: &Env, value: Address) {
@@ -47,6 +48,10 @@ pub fn set_icon_hub_token(e: &Env, value: String) {
 
 pub fn set_upgrade_authority(e: &Env, value: Address) {
     e.storage().instance().set(&DataKey::UpgradeAuthority, &value);
+}
+
+pub fn set_xcall_network_address(e: &Env, value: String) {
+    e.storage().instance().set(&DataKey::XCallNetworkAddress, &value);
 }
 
 pub fn has_upgrade_auth(e: &Env) -> bool {
@@ -77,6 +82,13 @@ pub fn get_icon_hub_token(e: &Env) -> Result<String, ContractError> {
 
 pub fn get_upgrade_authority(e: &Env) -> Result<Address, ContractError> {
     let key = DataKey::UpgradeAuthority;
+    e.storage()
+        .instance()
+        .get(&key)
+        .ok_or(ContractError::Uninitialized)}
+
+pub fn get_xcall_network_address(e: &Env) -> Result<String, ContractError> {
+    let key = DataKey::XCallNetworkAddress;
     e.storage()
         .instance()
         .get(&key)

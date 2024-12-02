@@ -3,9 +3,10 @@
 use crate::allowance::{read_allowance, spend_allowance, write_allowance};
 use crate::balance::{read_balance, receive_balance, spend_balance};
 use crate::{spoke_token, storage_types};
+use crate::spoke_token::xcall_client;
 use crate::errors::ContractError;
 use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
-use crate::storage_types::{get_upgrade_authority, set_icon_hub_token, set_upgrade_authority, set_xcall, set_xcall_manager, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD
+use crate::storage_types::{get_upgrade_authority, set_icon_hub_token, set_upgrade_authority, set_xcall, set_xcall_manager, set_xcall_network_address, get_xcall, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD
 };
 use soroban_sdk::{
     contract, contractimpl, panic_with_error, Address, Bytes, BytesN, Env, String, Vec,
@@ -36,9 +37,10 @@ impl BalancedDollar {
                 symbol,
             },
         );
-        set_xcall(&e, xcall);
+        set_xcall(&e, xcall.clone());
         set_icon_hub_token(&e, hub_token);
         set_xcall_manager(&e, xcall_manager);
+        set_xcall_network_address(&e, xcall_client(&e, &xcall).get_network_address());
         set_upgrade_authority(&e, upgrade_auth);
     }
 
@@ -65,6 +67,11 @@ impl BalancedDollar {
 
     pub fn is_initialized(e: Env) -> bool {
         storage_types::has_upgrade_auth(&e)
+    }
+
+    pub fn set_xcall_network_address(e: Env){
+        let xcall = get_xcall(&e).unwrap();
+        set_xcall_network_address(&e, xcall_client(&e, &xcall).get_network_address());
     }
 
     pub fn set_upgrade_authority(e: Env, new_upgrade_authority: Address) {

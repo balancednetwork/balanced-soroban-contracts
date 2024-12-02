@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, Vec};
+use soroban_sdk::{Address, Env, Vec, String};
 
 use crate::{errors::ContractError, storage_types::{DataKey, TokenData}};
 
@@ -39,6 +39,18 @@ pub fn write_registry(e: &Env, id: &Address) {
 pub fn write_token_data(env: &Env, token_address: Address, data: TokenData) {
     let key = DataKey::TokenData(token_address);
     env.storage().persistent().set(&key, &data);
+}
+
+pub fn set_xcall_network_address(e: &Env, value: String) {
+    e.storage().instance().set(&DataKey::XCallNetworkAddress, &value);
+}
+
+pub fn get_xcall_network_address(e: &Env) -> Result<String, ContractError> {
+    let key = DataKey::XCallNetworkAddress;
+    e.storage()
+        .instance()
+        .get(&key)
+        .ok_or(ContractError::Uninitialized)
 }
 
 pub fn read_token_data(env: &Env, token_address: Address) -> Result<TokenData, ContractError> {
