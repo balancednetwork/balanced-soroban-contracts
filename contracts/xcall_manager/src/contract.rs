@@ -195,6 +195,13 @@ impl XcallManager {
         return Ok(new_array);
     }
 
+    pub fn set_protocols(e: &Env, sources: Vec<String>, destinations:Vec<String>){
+        let config = config::get_config(&e);
+        config.upgrade_authority.require_auth();
+        write_sources(&e, &sources);
+        write_destinations(&e, &destinations);
+    }
+
     pub fn set_upgrade_authority(e: Env, upgrade_authority: Address) {
         let mut config = config::get_config(&e);
 
