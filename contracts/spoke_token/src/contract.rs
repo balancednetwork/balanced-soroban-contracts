@@ -1,7 +1,7 @@
 //! This contract demonstrates a sample implementation of the Soroban token
 //! interface.
 use crate::allowance::{read_allowance, spend_allowance, write_allowance};
-use crate::balance::{read_balance, receive_balance, spend_balance};
+use crate::balance::{read_balance, receive_balance, spend_balance, extend_balance};
 use crate::{spoke_token, storage_types};
 use crate::spoke_token::xcall_client;
 use crate::errors::ContractError;
@@ -109,6 +109,10 @@ impl BalancedDollar {
 
     pub fn balance(e: Env, id: Address) -> i128 {
         read_balance(&e, id)
+    }
+
+    pub fn extend_balance_ttl(e: Env, id: Address) {
+        extend_balance(&e, id);
     }
 
     pub fn transfer(e: Env, from: Address, to: Address, amount: i128) {
